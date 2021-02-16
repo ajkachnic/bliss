@@ -1,0 +1,32 @@
+import http from '@std/net/http'
+import fs from '@std/fs'
+
+handler = http.handler(fn (req, h) -> req.path :: {
+  '/' -> {
+    index = fs.read_stream('./index.html')
+    h.status(200).send(index)
+  },
+  _   -> {
+    h.status(404).send('not found')
+  }
+})
+
+better_handler = http.handler(fn (req, h) -> (req.method, req.path) :: {
+  [:GET, '/']   -> h.send('hello world'),
+  [method, '/'] -> h.status(405).send('method #{method} not allowed')
+})
+
+file_server = http.handler((req, h) -> {
+  fs.read_stream(req.path) :: {
+    [:success, file] -> {
+      h.status(200).send(file)
+    },
+    [:error, error] -> {
+      h.status(404).send(error)
+    }
+  }
+})
+
+http.serve(handler, {
+  port: 3000
+})

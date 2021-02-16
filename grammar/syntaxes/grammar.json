@@ -1,0 +1,70 @@
+{
+  "scopeName": "source.bliss",
+  "patterns": [
+    {
+      "name": "string.quoted.double",
+      "begin": "\"",
+      "end": "\""
+    },
+    {
+      "name": "string.quoted.single",
+      "begin": "'",
+      "end": "'"
+    },
+    {
+      "name": "keyword.other",
+      "match": "\\:[\\w][\\w\\d]+"
+    },
+    {
+      "name": "support.function",
+      "match": "map"
+    },
+    {
+      "name": "keyword.control",
+      "match": "fn|return|if|else|then"
+    },
+    {
+      "name": "keyword.other",
+      "match": "import|from|as"
+    },
+    {
+      "name": "constant.language",
+      "match": "true|false"
+    },
+    
+    {
+      "name": "constant.numeric",
+      "match": "[\\d]+(\\.[\\d]+)?"
+    },
+    {
+      "name": "variable",
+      "include": "#identifier"
+    },
+    {
+      "name": "keyword.operator",
+      "match": "\\=|\\+|\\-|\\*|\\/|\\%|\\.|\\-\\>|\\..|\\::|\\>|\\<|\\>=|\\<=|\\=\\=|\\!\\=|\\!"
+    },
+    {
+      "name": "punctuation.paren.open",
+      "match": "\\("
+    },
+    {
+      "name": "punctuation.paren.close",
+      "match": "\\)"
+    },
+    {
+      "name": "punctuation.braces.open",
+      "match": "\\{"
+    },
+    {
+      "name": "punctuation.braces.close",
+      "match": "\\}"
+    }
+  ],
+  "repository": {
+    "patterns": {
+      "name": "identifier",
+      "match": "[\\w][\\w\\d]+"
+    }
+  }
+}

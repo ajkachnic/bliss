@@ -1,0 +1,25 @@
+{
+    "name": "bliss",
+    "displayName": "blisslang",
+    "description": "Support for the bliss language",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.53.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "bliss",
+            "aliases": ["Bliss", "bliss"],
+            "extensions": [".bliss"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "bliss",
+            "scopeName": "source.bliss",
+            "path": "./syntaxes/grammar.json"
+        }]
+    }
+}
