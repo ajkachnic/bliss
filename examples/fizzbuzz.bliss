@@ -1,0 +1,8 @@
+fizzbuzz = fn n -> {
+  map(1..n+1, fn x -> ([ x % 3, x % 5 ]) :: {
+    [0, 0] -> 'fizzbuzz',
+    [0, _] -> 'fizz',
+    [_, 0] -> 'buzz',
+    _ -> x
+  })
+}

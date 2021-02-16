@@ -4,10 +4,10 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-use super::env::Environment;
+use super::{Evaluator, env::Environment};
 use crate::ast::{BlockStatement, Ident};
 
-pub type BuiltinFunc = fn(Vec<Object>) -> Result<Object, String>;
+pub type BuiltinFunc = fn(Vec<Object>, Rc<RefCell<Evaluator>>) -> Result<Object, String>;
 
 #[derive(Debug, PartialEq, Clone)]
 pub enum Object {

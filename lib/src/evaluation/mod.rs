@@ -11,6 +11,7 @@ use env::Environment;
 use object::Object;
 
 type EvalResult = Result<Object, String>;
+#[derive(Debug, Clone)]
 pub struct Evaluator {
     env: Rc<RefCell<Environment>>,
 }
@@ -136,6 +137,42 @@ impl Evaluator {
         }
     }
 
+    fn eval_function_call(&mut self, function: Object, args: Vec<Object>) -> EvalResult {
+        let (params, body, env) = match function {
+            Object::Function {
+                parameters,
+                body,
+                env,
+            } => (parameters, body, env),
+            Object::Builtin(params, func) => {
+                if params < 0 || params == (args.len() as i32) {
+                    return func(args, Rc::new(RefCell::new(self.clone())));
+                }
+                return Err(format!("Incorrect number of arguments passed: expected {}, got {}", params, args.len()))
+            }
+            _ => return Err(format!("Cannot call expression {}", function)),
+        };
+        if params.len() != args.len() {
+            return Err(format!(
+                "Wrong number of arguments: expected {}, found {}",
+                params.len(),
+                args.len()
+            ));
+        }
+        
+        let current_env = Rc::clone(&env);
+        let mut function_env = Environment::new_enclosed(Rc::clone(&current_env));
+        params
+        .iter()
+        .enumerate()
+        .for_each(|(index, param)| function_env.set(param.0.clone(), args[index].clone()));
+        self.env = Rc::new(RefCell::new(function_env));
+        let res = self.eval_block_stmt(body)?;
+        
+        self.env = current_env;
+        return Ok(res);
+    }
+
     fn eval_call_expression(&mut self, function: Box<Expr>, arguments: Vec<Expr>) -> EvalResult {
         let function = self.eval_expr(*function)?;
         let mut args = vec![];
@@ -152,7 +189,7 @@ impl Evaluator {
             } => (parameters, body, env),
             Object::Builtin(params, func) => {
                 if params < 0 || params == (args.len() as i32) {
-                    return func(args);
+                    return func(args, Rc::new(RefCell::new(self.clone())));
                 }
                 return Err(format!("Incorrect number of arguments passed: expected {}, got {}", params, args.len()))
             }
@@ -186,18 +223,8 @@ impl Evaluator {
 
         for (case, consequence) in cases {
             let env = Rc::clone(&current);
-            let evaled = match case {
-                Expr::Ident(ident) => {
-                    if &ident.0 == "_" {
-                        Object::Ident(ident)
-                    } else {
-                        env.borrow_mut().set(ident.0, condition.clone());
-                        condition.clone()
-                    }
-                },
-                _ => { self.eval_expr(case)? }
-            };
-            if condition == evaled || evaled == Object::Ident(Ident::from("_")) {
+            let evaled = self.eval_pattern_matching(&env, case, condition.clone())?; 
+            if self.eval_match_case(evaled, condition.clone()) {
                 self.env = env;
                 result = self.eval_block_stmt(consequence)?;
                 self.env = current;
@@ -205,6 +232,51 @@ impl Evaluator {
             }
         }
         return Ok(result)
+    }
+
+    fn eval_match_case(&mut self, case: Object, condition: Object) -> bool {
+        match case {
+            Object::Array(array) => {
+                if let Object::Array(condition) = condition {
+                    for (index, element) in array.iter().enumerate() {
+                        let result = self.eval_match_case(element.clone(), condition[index].clone());
+                        if result == false {
+                            return false
+                        }
+                    }
+                    return true
+                }
+                return false
+            },
+            Object::Ident(_) => {
+                return true
+            },
+            _ => case == condition
+        }
+    }
+
+    fn eval_pattern_matching(&mut self, env: &Rc<RefCell<Environment>>, case: Expr, condition: Object) -> EvalResult {
+        let value = match case {
+            Expr::Ident(ident) => {
+                if &ident.0 == "_" {
+                    Object::Ident(ident)
+                } else {
+                    env.borrow_mut().set(ident.0, condition.clone());
+                    condition.clone()
+                }
+            },
+            Expr::Array(array) => {
+                let mut arr = vec![];
+                for element in array {
+                    let result = self.eval_pattern_matching(env, element, condition.clone())?;
+                    arr.push(result);
+                }
+                Object::Array(arr)
+            },
+            _ => { self.eval_expr(case)? }
+        };
+
+        return Ok(value)
     }
 
     fn eval_infix_expression(&self, left: Object, operator: &str, right: Object) -> EvalResult {
