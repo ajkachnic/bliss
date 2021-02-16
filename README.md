@@ -25,6 +25,7 @@ The source code is kind of all over the place so expect a refactor *coming soon 
 ## Known Bugs/issues
 
 - [ ] For some reason non-tail recursion doesn't work. See [this example](examples/fib.bliss)
+  - [ ] Recursion in general is kinda broken tbh
 - [ ] There is no garbage collection so the stack will overflow if you do too much recursion
 - [ ] Support for logical operators in match cases isn't implemented `0 || 1 -> {}`
 - [ ] Pattern matching isn't fully supported across the language (yet)
