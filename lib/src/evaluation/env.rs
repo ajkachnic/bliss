@@ -19,7 +19,7 @@ impl Environment {
     }
 
     pub fn get_store(&self) -> &HashMap<String, Object> {
-        return &self.store
+        return &self.store;
     }
 
     pub fn new_enclosed(parent: Rc<RefCell<Environment>>) -> Environment {
@@ -34,8 +34,8 @@ impl Environment {
             Some(value) => Some(value.clone()),
             None => match self.parent {
                 Some(ref parent) => parent.borrow_mut().get(key),
-                None => None
-            }
+                None => None,
+            },
         }
     }
 
@@ -44,6 +44,6 @@ impl Environment {
     }
 
     pub fn has(&self, key: &str) -> bool {
-        return self.store.contains_key(key)
+        return self.store.contains_key(key);
     }
 }

@@ -4,7 +4,7 @@ use std::fmt;
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
-use super::{Evaluator, env::Environment};
+use super::{env::Environment, Evaluator};
 use crate::ast::{BlockStatement, Ident};
 
 pub type BuiltinFunc = fn(Vec<Object>, Rc<RefCell<Evaluator>>) -> Result<Object, String>;
@@ -61,8 +61,8 @@ impl fmt::Display for Object {
                     .map(|param| return param.clone().0)
                     .collect();
                 write!(f, "fn ({}) -> {{\n{}\n}}", params.join(", "), body)
-            },
-            Object::Builtin(_, _) => write!(f, "[builtin func]")
+            }
+            Object::Builtin(_, _) => write!(f, "[builtin func]"),
         }
     }
 }

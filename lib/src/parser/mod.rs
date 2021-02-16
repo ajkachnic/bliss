@@ -558,8 +558,10 @@ impl<'a> Parser<'a> {
     // Errors stuff
     fn peek_error(&mut self, t: &Token, context: ParserType) -> String {
         // TODO: Make better error handling
-        let attempted_msg =
-            generate_parser_message(ParserError::ExpectedFound(t, &self.peek_token), context.clone());
+        let attempted_msg = generate_parser_message(
+            ParserError::ExpectedFound(t, &self.peek_token),
+            context.clone(),
+        );
         let mut msg = format!(
             "Expected next token to be {:?}, got {:?} instead. This was in the {:?} parser",
             t, self.peek_token, context
