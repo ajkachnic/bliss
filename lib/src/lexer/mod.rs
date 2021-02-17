@@ -26,7 +26,7 @@ impl<'a> Lexer<'a> {
         self.input.peek()
     }
     fn read(&mut self) -> Option<char> {
-       self.input.next()
+        self.input.next()
     }
 
     fn peek_is(&mut self, expected: char) -> bool {

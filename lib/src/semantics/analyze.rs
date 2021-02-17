@@ -39,7 +39,7 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
                         context.add(item.0, expr.clone());
                     } else {
                         errors.push(
-                            "Attempted to pattern match with non identifier value".to_string()
+                            "Attempted to pattern match with non identifier value".to_string(),
                         )
                     }
                 }
@@ -49,7 +49,7 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
                         context.add(value.0, expr.clone());
                     } else {
                         errors.push(
-                            "Attempted to pattern match with non identifier value".to_string()
+                            "Attempted to pattern match with non identifier value".to_string(),
                         )
                     }
                 }
