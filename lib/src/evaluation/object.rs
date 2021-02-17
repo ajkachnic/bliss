@@ -55,10 +55,7 @@ impl fmt::Display for Object {
                 body,
                 env: _,
             } => {
-                let params: Vec<String> = parameters
-                    .iter()
-                    .map(|param| param.clone().0)
-                    .collect();
+                let params: Vec<String> = parameters.iter().map(|param| param.clone().0).collect();
                 write!(f, "fn ({}) -> {{\n{}\n}}", params.join(", "), body)
             }
             Object::Builtin(_, _) => write!(f, "[builtin func]"),

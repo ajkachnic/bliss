@@ -45,7 +45,8 @@ jobs:
       - uses: actions-rs/clippy-check@v1
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          args: -- -D warnings
+          # unnecessary_wraps allowed because builtins need it
+          args: -- -A clippy::unnecessary_wraps -D warnings
   coverage:
     name: Code coverage
     runs-on: ubuntu-latest

@@ -2,10 +2,7 @@ use std::{collections::HashMap, rc::Rc};
 
 use std::cell::RefCell;
 
-use super::{
-    object::{Object},
-    EvalResult, Evaluator,
-};
+use super::{object::Object, EvalResult, Evaluator};
 
 pub fn get_builtins() -> HashMap<String, Object> {
     let mut builtins = HashMap::new();
@@ -75,7 +72,7 @@ fn last(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
         return match array.last() {
             Some(val) => Ok(val.clone()),
             None => Ok(Object::Null),
-        }
+        };
     }
     Err(format!("{} isn't an array", args[0]))
 }

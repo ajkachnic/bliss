@@ -399,7 +399,7 @@ impl Evaluator {
     }
 
     fn eval_bang_operator(&self, right: Object) -> Object {
-       Self::native_bool_to_object(!Self::is_truthy(right))
+        Self::native_bool_to_object(!Self::is_truthy(right))
     }
 
     fn eval_if_expression(
