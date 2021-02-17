@@ -10,23 +10,29 @@ pub struct Environment {
     parent: Option<Rc<RefCell<Environment>>>,
 }
 
+impl Default for Environment {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Environment {
     pub fn new() -> Environment {
-        return Environment {
+        Environment {
             store: HashMap::new(),
             parent: None,
-        };
+        }
     }
 
     pub fn get_store(&self) -> &HashMap<String, Object> {
-        return &self.store;
+        &self.store
     }
 
     pub fn new_enclosed(parent: Rc<RefCell<Environment>>) -> Environment {
-        return Environment {
+        Environment {
             store: HashMap::new(),
             parent: Some(parent),
-        };
+        }
     }
 
     pub fn get(&self, key: String) -> Option<Object> {
@@ -44,6 +50,6 @@ impl Environment {
     }
 
     pub fn has(&self, key: &str) -> bool {
-        return self.store.contains_key(key);
+        self.store.contains_key(key)
     }
 }

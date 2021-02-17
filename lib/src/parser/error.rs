@@ -60,10 +60,10 @@ fn match_msg(err: ParserError) -> String {
 }
 
 pub fn generate_parser_message(err: ParserError, t: ParserType) -> String {
-    return match t {
+    match t {
         ParserType::Assign => assign_msg(err),
         ParserType::Array => array_msg(err),
         ParserType::Match => match_msg(err),
         _ => String::new(),
-    };
+    }
 }

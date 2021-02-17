@@ -1,10 +1,9 @@
-use crate::ast::Expr;
 use std::{collections::HashMap, rc::Rc};
 
 use std::cell::RefCell;
 
 use super::{
-    object::{BuiltinFunc, Object},
+    object::{Object},
     EvalResult, Evaluator,
 };
 
@@ -22,7 +21,7 @@ pub fn get_builtins() -> HashMap<String, Object> {
 
     builtins.insert("map".to_string(), Object::Builtin(2, map));
 
-    return builtins;
+    builtins
 }
 
 fn len(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
@@ -38,27 +37,27 @@ fn len(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
         } => parameters.len(),
         _ => 0,
     };
-    return Ok(Object::Number(len as f64));
+    Ok(Object::Number(len as f64))
 }
 
 fn log(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
     for arg in args {
         println!("{}", arg);
     }
-    return Ok(Object::Void);
+    Ok(Object::Void)
 }
 
 fn init(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
     if let Object::Array(array) = args[0].clone() {
         return Ok(Object::Array(array[0..array.len() - 1].to_vec()));
     };
-    return Err(format!("{} isn't an array", args[0]));
+    Err(format!("{} isn't an array", args[0]))
 }
 fn tail(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
     if let Object::Array(array) = args[0].clone() {
         return Ok(Object::Array(array[1..array.len()].to_vec()));
     };
-    return Err(format!("{} isn't an array", args[0]));
+    Err(format!("{} isn't an array", args[0]))
 }
 
 fn head(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
@@ -68,7 +67,7 @@ fn head(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
             None => Ok(Object::Null),
         };
     }
-    return Err(format!("{} isn't an array", args[0]));
+    Err(format!("{} isn't an array", args[0]))
 }
 
 fn last(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
@@ -76,9 +75,9 @@ fn last(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
         return match array.last() {
             Some(val) => Ok(val.clone()),
             None => Ok(Object::Null),
-        };
+        }
     }
-    return Err(format!("{} isn't an array", args[0]));
+    Err(format!("{} isn't an array", args[0]))
 }
 
 fn map(args: Vec<Object>, eval: Rc<RefCell<Evaluator>>) -> EvalResult {
@@ -106,5 +105,5 @@ fn map(args: Vec<Object>, eval: Rc<RefCell<Evaluator>>) -> EvalResult {
             arg => return Err(format!("Expected function, got {}", arg)),
         }
     }
-    return Err(format!("{} isn't an array", args[0]));
+    Err(format!("{} isn't an array", args[0]))
 }

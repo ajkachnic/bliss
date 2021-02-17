@@ -17,16 +17,16 @@ pub struct Lexer<'a> {
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &str) -> Lexer {
-        return Lexer {
+        Lexer {
             input: input.chars().peekable(),
-        };
+        }
     }
 
     fn peek(&mut self) -> Option<&char> {
-        return self.input.peek();
+        self.input.peek()
     }
     fn read(&mut self) -> Option<char> {
-        return self.input.next();
+       self.input.next()
     }
 
     fn peek_is(&mut self, expected: char) -> bool {
@@ -37,7 +37,7 @@ impl<'a> Lexer<'a> {
         }
     }
     fn peek_not(&mut self, expected: char) -> bool {
-        return !self.peek_is(expected);
+        !self.peek_is(expected)
     }
 
     fn two_char(&mut self, expected: char, single: Token, double: Token) -> Token {
@@ -45,7 +45,7 @@ impl<'a> Lexer<'a> {
             self.read();
             return double;
         }
-        return single;
+        single
     }
 
     fn generate_token(&mut self, ch: char) -> Token {
@@ -89,7 +89,7 @@ impl<'a> Lexer<'a> {
             // Strings
             '\'' | '"' => {
                 let string = self.read_string(ch);
-                return Token::String(string);
+                Token::String(string)
             }
 
             // Braces 'n stuff
@@ -119,18 +119,18 @@ impl<'a> Lexer<'a> {
             let tok = self.generate_token(ch);
             return tok;
         }
-        return Token::EOF;
+        Token::EOF
     }
 
     // "is" functions
     fn is_whitespace(ch: char) -> bool {
-        return ch.is_ascii_whitespace();
+        ch.is_ascii_whitespace()
     }
     fn is_letter(ch: char) -> bool {
-        return ch.is_ascii_alphabetic() || ch == '_';
+        ch.is_ascii_alphabetic() || ch == '_'
     }
     fn is_digit(ch: char) -> bool {
-        return ch.is_ascii_digit();
+        ch.is_ascii_digit()
     }
 
     // Takes a function like &Self::is_letter
@@ -150,7 +150,7 @@ impl<'a> Lexer<'a> {
                 ident.push(ch)
             }
         }
-        return ident;
+        ident
     }
     /*
       Float support added in parsing (it's really cursed)
@@ -165,7 +165,7 @@ impl<'a> Lexer<'a> {
                 number.push(ch)
             }
         }
-        return number;
+        number
     }
     // TODO: Add support for escapes, like \"
     fn read_string(&mut self, initial: char) -> String {
@@ -181,7 +181,7 @@ impl<'a> Lexer<'a> {
         }
         // Read the last quote
         self.read();
-        return string;
+        string
     }
     fn skip_whitespace(&mut self) {
         while self.peek_fn(&Self::is_whitespace) {
