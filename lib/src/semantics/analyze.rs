@@ -22,10 +22,10 @@ pub fn analyze_stmts(program: Program, parent: Option<&mut Context>) -> Analysis
             }
         }
     }
-    if results.len() > 0 {
+    if !results.is_empty() {
         return Err(results);
     }
-    return Ok(());
+    Ok(())
 }
 
 pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
@@ -38,9 +38,9 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
                     if let Expr::Ident(item) = item {
                         context.add(item.0, expr.clone());
                     } else {
-                        errors.push(format!(
-                            "Attempted to pattern match with non identifier value"
-                        ))
+                        errors.push(
+                            "Attempted to pattern match with non identifier value".to_string()
+                        )
                     }
                 }
             } else if let Expr::Hash(hash) = name {
@@ -48,9 +48,9 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
                     if let Expr::Ident(value) = value {
                         context.add(value.0, expr.clone());
                     } else {
-                        errors.push(format!(
-                            "Attempted to pattern match with non identifier value"
-                        ))
+                        errors.push(
+                            "Attempted to pattern match with non identifier value".to_string()
+                        )
                     }
                 }
             } else if let Expr::Ident(ident) = name {
@@ -58,10 +58,10 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
             }
             let res = analyze_expr(expr, context);
             interpolate_errors(res, &mut errors);
-            if errors.len() > 0 {
+            if !errors.is_empty() {
                 return Err(errors);
             }
-            return Ok(());
+            Ok(())
         }
         Stmt::Return(_) => Ok(()),
         Stmt::Import { name, source } => {
@@ -82,10 +82,10 @@ import ident from 'string';", &name)
 Hint: Imports in bliss as static, meaning that you can't use other forms of expressions to determine the source. This is to simplify our handling of imports", &source)
         )
             }
-            if errors.len() > 0 {
+            if !errors.is_empty() {
                 return Err(errors);
             }
-            return Ok(());
+            Ok(())
         }
     }
 }
@@ -106,7 +106,7 @@ pub fn analyze_expr(expr: Expr, context: &mut Context) -> AnalysisResult {
             consequence,
             alternative,
         } => {
-            let res = analyze_expr(*condition.clone(), context);
+            let res = analyze_expr(*condition, context);
             interpolate_errors(res, &mut errors);
             let res = analyze_stmts(consequence, Some(&mut Context::new_child_block(context)));
             interpolate_errors(res, &mut errors);
@@ -155,10 +155,10 @@ pub fn analyze_expr(expr: Expr, context: &mut Context) -> AnalysisResult {
         _ => {}
     };
 
-    if errors.len() > 0 {
+    if !errors.is_empty() {
         return Err(errors);
     }
-    return Ok(());
+    Ok(())
 }
 
 fn interpolate_errors(res: AnalysisResult, errors: &mut Vec<String>) {

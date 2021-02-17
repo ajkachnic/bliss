@@ -4,12 +4,12 @@ pub struct Ident(pub String);
 // Trait implementations for Ident
 impl Into<Expr> for Ident {
     fn into(self) -> Expr {
-        return Expr::Ident(self);
+        Expr::Ident(self)
     }
 }
 impl From<&str> for Ident {
     fn from(string: &str) -> Ident {
-        return Ident(string.to_string());
+        Ident(string.to_string())
     }
 }
 impl fmt::Display for Ident {
@@ -28,7 +28,7 @@ pub enum Stmt {
 
 impl Into<BlockStatement> for Stmt {
     fn into(self) -> BlockStatement {
-        return BlockStatement(vec![self]);
+        BlockStatement(vec![self])
     }
 }
 
@@ -78,41 +78,41 @@ pub enum Expr {
 
 impl Into<Stmt> for Expr {
     fn into(self) -> Stmt {
-        return Stmt::Expr(self);
+        Stmt::Expr(self)
     }
 }
 
 impl Into<Vec<Stmt>> for Expr {
     fn into(self) -> Vec<Stmt> {
-        return vec![self.into()];
+        vec![self.into()]
     }
 }
 impl Into<BlockStatement> for Expr {
     fn into(self) -> BlockStatement {
-        return BlockStatement(self.into());
+        BlockStatement(self.into())
     }
 }
 
 // From traits
 impl From<&str> for Expr {
     fn from(val: &str) -> Self {
-        return Expr::String(val.to_string());
+        Expr::String(val.to_string())
     }
 }
 impl From<Vec<Expr>> for Expr {
     fn from(val: Vec<Expr>) -> Self {
-        return Expr::Array(val);
+        Expr::Array(val)
     }
 }
 impl From<bool> for Expr {
     fn from(val: bool) -> Self {
-        return Expr::Boolean(val);
+        Expr::Boolean(val)
     }
 }
 
 impl From<f64> for Expr {
     fn from(val: f64) -> Self {
-        return Expr::Number(val);
+        Expr::Number(val)
     }
 }
 
@@ -143,7 +143,7 @@ impl fmt::Display for Expr {
                 }
                 write!(f, "{}", params.join(","))?;
                 write!(f, ") -> {{{}}}", body)?;
-                return Ok(());
+                Ok(())
             }
             Expr::Call {
                 function,
@@ -157,9 +157,9 @@ impl fmt::Display for Expr {
                     args.push(format!("{}", arg))
                 }
 
-                out.push_str("(");
+                out.push('(');
                 out.push_str(&args.join(", "));
-                out.push_str(")");
+                out.push(')');
 
                 write!(f, "{}", out)
             }
@@ -196,17 +196,23 @@ impl fmt::Display for Expr {
     }
 }
 
+impl Default for BlockStatement {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub struct BlockStatement(pub Vec<Stmt>);
 impl BlockStatement {
     pub fn new() -> BlockStatement {
-        return BlockStatement(vec![]);
+        BlockStatement(vec![])
     }
     pub fn from(stmts: Vec<Stmt>) -> BlockStatement {
-        return BlockStatement(stmts);
+        BlockStatement(stmts)
     }
     pub fn expr(expr: Expr) -> BlockStatement {
-        return BlockStatement(vec![Stmt::Expr(expr)]);
+        BlockStatement(vec![Stmt::Expr(expr)])
     }
 }
 
@@ -216,7 +222,7 @@ impl fmt::Display for BlockStatement {
         for stmt in inner {
             writeln!(f, "{}", stmt)?;
         }
-        return Ok(());
+        Ok(())
     }
 }
 pub type Program = BlockStatement;

@@ -6,7 +6,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
-use crate::ast::{BlockStatement, Expr, Ident, Program, Stmt};
+use crate::ast::{BlockStatement, Expr, Program, Stmt};
 use env::Environment;
 use object::Object;
 
@@ -21,7 +21,7 @@ impl Evaluator {
         for (name, value) in builtins {
             env.borrow_mut().set(name, value);
         }
-        return Self { env: env };
+        Self { env }
     }
     pub fn eval_program(&mut self, program: Program) -> EvalResult {
         let mut result = Object::Void;
@@ -31,7 +31,7 @@ impl Evaluator {
                 value => result = value,
             }
         }
-        return Ok(result);
+        Ok(result)
     }
 
     fn eval_block_stmt(&mut self, stmts: BlockStatement) -> EvalResult {
@@ -42,7 +42,7 @@ impl Evaluator {
                 value => result = value,
             }
         }
-        return Ok(result);
+        Ok(result)
     }
 
     fn eval_stmt(&mut self, stmt: Stmt) -> EvalResult {
@@ -50,7 +50,7 @@ impl Evaluator {
             Stmt::Expr(expr) => self.eval_expr(expr),
             Stmt::Return(expr) => {
                 let value = self.eval_expr(expr)?;
-                return Ok(Object::Return(Box::new(value)));
+                Ok(Object::Return(Box::new(value)))
             }
             Stmt::Assign(name, value) => {
                 let value = self.eval_expr(value)?;
@@ -73,7 +73,7 @@ impl Evaluator {
                 }
                 Ok(Object::Void)
             }
-            _ => Err(format!("statement not support")),
+            _ => Err("statement not supported".to_string()),
         }
     }
 
@@ -93,36 +93,35 @@ impl Evaluator {
             Expr::Hash(values) => {
                 let mut hash = HashMap::new();
                 for (key, value) in values {
-                    let key = Object::Ident(key);
                     let value = self.eval_expr(value)?;
-                    hash.insert(key, value);
+                    hash.insert(key.0, value);
                 }
 
                 Ok(Object::Hash(hash))
             }
             Expr::Prefix(operator, right) => {
                 let right = self.eval_expr(*right)?;
-                return self.eval_prefix_expression(&operator, right);
+                self.eval_prefix_expression(&operator, right)
             }
             Expr::Infix(left, operator, right) => {
                 let left = self.eval_expr(*left)?;
                 let right = self.eval_expr(*right)?;
-                return self.eval_infix_expression(left, &operator, right);
+                self.eval_infix_expression(left, &operator, right)
             }
             Expr::If {
                 condition,
                 consequence,
                 alternative,
-            } => self.eval_if_expression(condition, consequence, alternative),
-            Expr::Match { condition, cases } => self.eval_match_expression(condition, cases),
+            } => self.eval_if_expression(*condition, consequence, alternative),
+            Expr::Match { condition, cases } => self.eval_match_expression(*condition, cases),
             Expr::Ident(name) => match self.env.borrow().get(name.0.clone()) {
-                Some(value) => Ok(value.clone()),
+                Some(value) => Ok(value),
                 None => Err(format!("Identifier not found: {}", name)),
             },
             Expr::Call {
                 function,
                 arguments,
-            } => self.eval_call_expression(function, arguments),
+            } => self.eval_call_expression(*function, arguments),
             Expr::Function { parameters, body } => Ok(Object::Function {
                 parameters,
                 body,
@@ -169,11 +168,11 @@ impl Evaluator {
         let res = self.eval_block_stmt(body)?;
 
         self.env = current_env;
-        return Ok(res);
+        Ok(res)
     }
 
-    fn eval_call_expression(&mut self, function: Box<Expr>, arguments: Vec<Expr>) -> EvalResult {
-        let function = self.eval_expr(*function)?;
+    fn eval_call_expression(&mut self, function: Expr, arguments: Vec<Expr>) -> EvalResult {
+        let function = self.eval_expr(function)?;
         let mut args = vec![];
         for arg in arguments {
             let res = self.eval_expr(arg)?;
@@ -216,15 +215,15 @@ impl Evaluator {
         let res = self.eval_block_stmt(body)?;
 
         self.env = current_env;
-        return Ok(res);
+        Ok(res)
     }
 
     fn eval_match_expression(
         &mut self,
-        condition: Box<Expr>,
+        condition: Expr,
         cases: Vec<(Expr, BlockStatement)>,
     ) -> EvalResult {
-        let condition = self.eval_expr(*condition)?;
+        let condition = self.eval_expr(condition)?;
         let current = Rc::clone(&self.env);
         let mut result = Object::Void;
 
@@ -238,7 +237,7 @@ impl Evaluator {
                 break;
             }
         }
-        return Ok(result);
+        Ok(result)
     }
 
     fn eval_match_case(&mut self, case: Object, condition: Object) -> bool {
@@ -248,15 +247,15 @@ impl Evaluator {
                     for (index, element) in array.iter().enumerate() {
                         let result =
                             self.eval_match_case(element.clone(), condition[index].clone());
-                        if result == false {
+                        if !result {
                             return false;
                         }
                     }
                     return true;
                 }
-                return false;
+                false
             }
-            Object::Ident(_) => return true,
+            Object::Ident(_) => true,
             _ => case == condition,
         }
     }
@@ -273,7 +272,7 @@ impl Evaluator {
                     Object::Ident(ident)
                 } else {
                     env.borrow_mut().set(ident.0, condition.clone());
-                    condition.clone()
+                    condition
                 }
             }
             Expr::Array(array) => {
@@ -287,7 +286,7 @@ impl Evaluator {
             _ => self.eval_expr(case)?,
         };
 
-        return Ok(value);
+        Ok(value)
     }
 
     fn eval_infix_expression(&self, left: Object, operator: &str, right: Object) -> EvalResult {
@@ -298,13 +297,13 @@ impl Evaluator {
             }
             "==" | "!=" => self.eval_boolean_operator(left, operator, right),
             ".." => self.eval_range_operator(left, right),
-            _ => Err(format!("Unsupported operator")),
+            _ => Err("Unsupported operator".to_string()),
         }
     }
 
     fn eval_prefix_expression(&self, operator: &str, right: Object) -> EvalResult {
         match operator {
-            "!" => self.eval_bang_operator(right),
+            "!" => Ok(self.eval_bang_operator(right)),
             "-" => {
                 if let Object::Number(right) = right {
                     return Ok(Object::Number(-right));
@@ -343,7 +342,7 @@ impl Evaluator {
             ))
         }?;
 
-        return Ok(result);
+        Ok(result)
     }
 
     fn eval_boolean_operator(&self, left: Object, operator: &str, right: Object) -> EvalResult {
@@ -367,10 +366,10 @@ impl Evaluator {
                 return Ok(Object::Array(items));
             }
         }
-        return Err(format!(
+        Err(format!(
             "Can't use range operator on {} and {}",
             left, right
-        ));
+        ))
     }
 
     fn eval_plus_operator(&self, left: Object, right: Object) -> EvalResult {
@@ -379,56 +378,53 @@ impl Evaluator {
                 if let Object::Number(right) = right {
                     return Ok(Object::Number(left + right));
                 }
-                return Err(format!("Unable to add {:?} and {:?}", left, right));
+                Err(format!("Unable to add {:?} and {:?}", left, right))
             }
             Object::String(left) => {
                 if let Object::String(right) = right {
                     let new = [left, right].concat();
                     return Ok(Object::String(new));
                 }
-                return Err(format!("Unable to add {:?} and {:?}", left, right));
+                Err(format!("Unable to add {:?} and {:?}", left, right))
             }
             Object::Array(left) => {
                 if let Object::Array(right) = right {
                     let new = [left, right].concat();
                     return Ok(Object::Array(new));
                 }
-                return Err(format!("Unable to add {:?} and {:?}", left, right));
+                Err(format!("Unable to add {:?} and {:?}", left, right))
             }
             _ => Err(format!("Unable to add {:?} and {:?}", left, right)),
         }
     }
 
-    fn eval_bang_operator(&self, right: Object) -> EvalResult {
-        return Ok(Self::native_bool_to_object(!Self::is_truthy(right)));
+    fn eval_bang_operator(&self, right: Object) -> Object {
+       Self::native_bool_to_object(!Self::is_truthy(right))
     }
 
     fn eval_if_expression(
         &mut self,
-        condition: Box<Expr>,
+        condition: Expr,
         consequence: BlockStatement,
         alternative: BlockStatement,
     ) -> EvalResult {
-        let condition = self.eval_expr(*condition)?;
+        let condition = self.eval_expr(condition)?;
         if Self::is_truthy(condition) {
-            return self.eval_block_stmt(consequence);
+            self.eval_block_stmt(consequence)
         } else {
-            return self.eval_block_stmt(alternative);
+            self.eval_block_stmt(alternative)
         }
     }
 
     fn native_bool_to_object(input: bool) -> Object {
         if input {
-            return Object::Boolean(true);
+            Object::Boolean(true)
         } else {
-            return Object::Boolean(false);
+            Object::Boolean(false)
         }
     }
 
     fn is_truthy(input: Object) -> bool {
-        return match input {
-            Object::Boolean(false) => false,
-            _ => true,
-        };
+        matches!(input, Object::Boolean(false))
     }
 }

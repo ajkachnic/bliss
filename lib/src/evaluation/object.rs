@@ -1,7 +1,6 @@
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::fmt;
-use std::hash::{Hash, Hasher};
 use std::rc::Rc;
 
 use super::{env::Environment, Evaluator};
@@ -9,14 +8,14 @@ use crate::ast::{BlockStatement, Ident};
 
 pub type BuiltinFunc = fn(Vec<Object>, Rc<RefCell<Evaluator>>) -> Result<Object, String>;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub enum Object {
     Number(f64),
     String(String),
     Ident(Ident),
     Boolean(bool),
     Array(Vec<Object>),
-    Hash(HashMap<Object, Object>),
+    Hash(HashMap<String, Object>),
     Return(Box<Object>),
     Function {
         parameters: Vec<Ident>,
@@ -28,7 +27,7 @@ pub enum Object {
     Null,
 }
 
-impl Eq for Object {}
+// impl Eq for Object {}
 
 impl fmt::Display for Object {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -58,7 +57,7 @@ impl fmt::Display for Object {
             } => {
                 let params: Vec<String> = parameters
                     .iter()
-                    .map(|param| return param.clone().0)
+                    .map(|param| param.clone().0)
                     .collect();
                 write!(f, "fn ({}) -> {{\n{}\n}}", params.join(", "), body)
             }
@@ -67,23 +66,8 @@ impl fmt::Display for Object {
     }
 }
 
-impl Hash for Object {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        match *self {
-            Object::Number(ref i) => {
-                // TODO: Clean this up
-                // As of now, if you put "0.1" and 0.1 into a hashmap, they would override one another. To avoid using unsafe code, this is best solution I could think of atm
-                i.to_string().hash(state)
-            }
-            Object::Boolean(ref b) => b.hash(state),
-            Object::String(ref s) => s.hash(state),
-            _ => "".hash(state),
-        }
-    }
-}
-
 impl From<bool> for Object {
     fn from(value: bool) -> Object {
-        return Object::Boolean(value);
+        Object::Boolean(value)
     }
 }
