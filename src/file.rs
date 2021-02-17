@@ -30,12 +30,9 @@ pub fn exec_file(path: &Path) -> std::io::Result<()> {
         ..Default::default()
     };
     let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(&mut context));
-    match analysis {
-        Err(errors) => {
-            handle_analysis_errors(errors);
-            return Ok(());
-        }
-        _ => {}
+    if let Err(errors) = analysis {
+        handle_analysis_errors(errors);
+        return Ok(());
     }
 
     let env = evaluation::env::Environment::new();
@@ -50,7 +47,7 @@ pub fn exec_file(path: &Path) -> std::io::Result<()> {
         Err(error) => eprintln!("{}", error),
     }
 
-    return Ok(());
+    Ok(())
 }
 
 fn handle_parser_error(error: String) {
