@@ -1,15 +1,15 @@
 use super::*;
-use crate::token::Token;
+use crate::token::TokenType;
 // Currently preferring many smaller tests over one giant one for a couple of reasons
 // - More readable
 // - Each test has an actual purpose
 // - It's easier to tell where a bug may be
-fn test_tokens(input: &str, tests: Vec<Token>) {
+fn test_tokens(input: &str, tests: Vec<TokenType>) {
     let mut l = Lexer::new(input);
     for test in tests {
         let tok = l.next_token();
         println!("{:?}", tok);
-        assert_eq!(tok, test);
+        assert_eq!(tok.tok, test);
     }
 }
 
@@ -17,9 +17,9 @@ fn test_tokens(input: &str, tests: Vec<Token>) {
 fn test_symbols() {
     let input = ":true + :false";
     let tests = vec![
-        Token::Symbol(String::from("true")),
-        Token::Plus,
-        Token::Symbol(String::from("false")),
+        TokenType::Symbol(String::from("true")),
+        TokenType::Plus,
+        TokenType::Symbol(String::from("false")),
     ];
     test_tokens(input, tests);
 }
@@ -28,20 +28,20 @@ fn test_symbols() {
 fn test_two_chars() {
     let input = "a != b == c >= d <= e :: 0..5 ->";
     let tests = vec![
-        Token::Ident(String::from("a")),
-        Token::NotEq,
-        Token::Ident(String::from("b")),
-        Token::Eq,
-        Token::Ident(String::from("c")),
-        Token::GreaterEq,
-        Token::Ident(String::from("d")),
-        Token::LessEq,
-        Token::Ident(String::from("e")),
-        Token::Match,
-        Token::Number(String::from("0")),
-        Token::Range,
-        Token::Number(String::from("5")),
-        Token::Arrow,
+        TokenType::Ident(String::from("a")),
+        TokenType::NotEq,
+        TokenType::Ident(String::from("b")),
+        TokenType::Eq,
+        TokenType::Ident(String::from("c")),
+        TokenType::GreaterEq,
+        TokenType::Ident(String::from("d")),
+        TokenType::LessEq,
+        TokenType::Ident(String::from("e")),
+        TokenType::Match,
+        TokenType::Number(String::from("0")),
+        TokenType::Range,
+        TokenType::Number(String::from("5")),
+        TokenType::Arrow,
     ];
     test_tokens(input, tests);
 }
@@ -50,11 +50,11 @@ fn test_two_chars() {
 fn test_identifiers() {
     let input = "abc my_number5 foo bar foobar";
     let tests = vec![
-        Token::Ident(String::from("abc")),
-        Token::Ident(String::from("my_number5")),
-        Token::Ident(String::from("foo")),
-        Token::Ident(String::from("bar")),
-        Token::Ident(String::from("foobar")),
+        TokenType::Ident(String::from("abc")),
+        TokenType::Ident(String::from("my_number5")),
+        TokenType::Ident(String::from("foo")),
+        TokenType::Ident(String::from("bar")),
+        TokenType::Ident(String::from("foobar")),
     ];
     test_tokens(input, tests);
 }
@@ -63,9 +63,9 @@ fn test_identifiers() {
 fn test_strings() {
     let input = "'hello ' + \"world\"";
     let tests = vec![
-        Token::String(String::from("hello ")),
-        Token::Plus,
-        Token::String(String::from("world")),
+        TokenType::String(String::from("hello ")),
+        TokenType::Plus,
+        TokenType::String(String::from("world")),
     ];
     test_tokens(input, tests);
 }
@@ -74,10 +74,10 @@ fn test_strings() {
 fn test_keywords() {
     let input = "import stuff from 'the place'";
     let tests = vec![
-        Token::Import,
-        Token::Ident(String::from("stuff")),
-        Token::From,
-        Token::String(String::from("the place")),
+        TokenType::Import,
+        TokenType::Ident(String::from("stuff")),
+        TokenType::From,
+        TokenType::String(String::from("the place")),
     ];
     test_tokens(input, tests);
 }
@@ -86,11 +86,11 @@ fn test_keywords() {
 fn test_numbers() {
     let input = "5 + 4 * 8000";
     let tests = vec![
-        Token::Number(String::from("5")),
-        Token::Plus,
-        Token::Number(String::from("4")),
-        Token::Asterisk,
-        Token::Number(String::from("8000")),
+        TokenType::Number(String::from("5")),
+        TokenType::Plus,
+        TokenType::Number(String::from("4")),
+        TokenType::Asterisk,
+        TokenType::Number(String::from("8000")),
     ];
     test_tokens(input, tests);
 }
@@ -99,20 +99,20 @@ fn test_numbers() {
 fn test_single() {
     let input = "=+-*/%(){},;:";
     let tests = vec![
-        Token::Assign,
-        Token::Plus,
-        Token::Minus,
-        Token::Asterisk,
-        Token::Slash,
-        Token::Modulus,
-        Token::LeftParen,
-        Token::RightParen,
-        Token::LeftBrace,
-        Token::RightBrace,
-        Token::Comma,
-        Token::Semicolon,
-        Token::Colon,
-        Token::EOF,
+        TokenType::Assign,
+        TokenType::Plus,
+        TokenType::Minus,
+        TokenType::Asterisk,
+        TokenType::Slash,
+        TokenType::Modulus,
+        TokenType::LeftParen,
+        TokenType::RightParen,
+        TokenType::LeftBrace,
+        TokenType::RightBrace,
+        TokenType::Comma,
+        TokenType::Semicolon,
+        TokenType::Colon,
+        TokenType::EOF,
     ];
     test_tokens(input, tests);
 }

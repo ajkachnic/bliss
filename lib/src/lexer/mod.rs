@@ -2,7 +2,7 @@ use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
 
 use crate::token;
-use token::Token;
+use token::{Token, TokenType};
 
 #[cfg(test)]
 #[path = "./lexer_test.rs"]
@@ -40,7 +40,7 @@ impl<'a> Lexer<'a> {
         !self.peek_is(expected)
     }
 
-    fn two_char(&mut self, expected: char, single: Token, double: Token) -> Token {
+    fn two_char(&mut self, expected: char, single: TokenType, double: TokenType) -> TokenType {
         if self.peek_is(expected) {
             self.read();
             return double;
@@ -48,78 +48,84 @@ impl<'a> Lexer<'a> {
         single
     }
 
-    fn generate_token(&mut self, ch: char) -> Token {
+    fn generate_token(&mut self, ch: char) -> TokenType {
         match ch {
             // Symbols and Operators
-            '=' => self.two_char('=', Token::Assign, Token::Eq),
-            '+' => Token::Plus,
-            '-' => self.two_char('>', Token::Minus, Token::Arrow),
-            '*' => Token::Asterisk,
-            '%' => Token::Modulus,
-            '/' => Token::Slash,
+            '=' => self.two_char('=', TokenType::Assign, TokenType::Eq),
+            '+' => TokenType::Plus,
+            '-' => self.two_char('>', TokenType::Minus, TokenType::Arrow),
+            '*' => TokenType::Asterisk,
+            '%' => TokenType::Modulus,
+            '/' => TokenType::Slash,
             /*
             There are some complications with leading zero support though
             - It's potentially ambiguous (example ident.5)
             - We can't take things like this into context until parsing, so it might be better to handle this there (especially since that's also where we convert numbers to actual numbers)
              */
-            '.' => self.two_char('.', Token::Period, Token::Range),
+            '.' => self.two_char('.', TokenType::Period, TokenType::Range),
             // Equality Operators
-            '>' => self.two_char('=', Token::Greater, Token::GreaterEq),
-            '<' => self.two_char('=', Token::Less, Token::LessEq),
-            '!' => self.two_char('=', Token::Bang, Token::NotEq),
+            '>' => self.two_char('=', TokenType::Greater, TokenType::GreaterEq),
+            '<' => self.two_char('=', TokenType::Less, TokenType::LessEq),
+            '!' => self.two_char('=', TokenType::Bang, TokenType::NotEq),
 
             // Logical operators
-            '|' => self.two_char('|', Token::Illegal, Token::Or),
-            '&' => self.two_char('&', Token::Illegal, Token::And),
+            '|' => self.two_char('|', TokenType::Illegal, TokenType::Or),
+            '&' => self.two_char('&', TokenType::Illegal, TokenType::And),
 
             // Delimiters
-            ',' => Token::Comma,
-            ';' => Token::Semicolon,
+            ',' => TokenType::Comma,
+            ';' => TokenType::Semicolon,
             ':' => {
                 if let Some(&(_, next)) = self.peek() {
                     if Self::is_letter(next) {
                         self.read();
                         let text = self.read_identifier(next);
-                        return Token::Symbol(text);
+                        return TokenType::Symbol(text);
                     }
                 }
-                self.two_char(':', Token::Colon, Token::Match)
+                self.two_char(':', TokenType::Colon, TokenType::Match)
             }
 
             // Strings
             '\'' | '"' => {
                 let string = self.read_string(ch);
-                Token::String(string)
+                TokenType::String(string)
             }
 
             // Braces 'n stuff
-            '(' => Token::LeftParen,
-            ')' => Token::RightParen,
-            '{' => Token::LeftBrace,
-            '}' => Token::RightBrace,
-            '[' => Token::LeftBracket,
-            ']' => Token::RightBracket,
+            '(' => TokenType::LeftParen,
+            ')' => TokenType::RightParen,
+            '{' => TokenType::LeftBrace,
+            '}' => TokenType::RightBrace,
+            '[' => TokenType::LeftBracket,
+            ']' => TokenType::RightBracket,
             _ => {
                 if Self::is_letter(ch) {
                     let ident = self.read_identifier(ch);
                     return token::lookup_keyword(ident.as_str());
                 } else if Self::is_digit(ch) {
                     let number = self.read_number(ch);
-                    return Token::Number(number);
+                    return TokenType::Number(number);
                 }
-                Token::Illegal
+                TokenType::Illegal
             }
         }
     }
 
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-        if let Some((_, ch)) = self.read() {
+        if let Some((offset, ch)) = self.read() {
             // Light abstraction to make this less ugly
             let tok = self.generate_token(ch);
-            return tok;
+            return Token {
+                tok,
+                offset
+            };
         }
-        Token::EOF
+        Token {
+            tok: TokenType::EOF,
+            offset: 0
+        }
     }
 
     // "is" functions
