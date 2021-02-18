@@ -2,7 +2,9 @@ use std::{collections::HashMap, rc::Rc};
 
 use std::cell::RefCell;
 
-use super::{object::Object, EvalResult, Evaluator};
+use crate::object::Object;
+
+use super::{EvalResult, Evaluator};
 
 pub fn get_builtins() -> HashMap<String, Object> {
     let mut builtins = HashMap::new();

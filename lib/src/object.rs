@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use std::fmt;
 use std::rc::Rc;
 
-use super::{env::Environment, Evaluator};
 use crate::ast::{BlockStatement, Ident};
+use crate::evaluation::{env::Environment, Evaluator};
 
 pub type BuiltinFunc = fn(Vec<Object>, Rc<RefCell<Evaluator>>) -> Result<Object, String>;
 

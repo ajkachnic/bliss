@@ -1,7 +1,11 @@
 mod ast;
+pub mod code;
+pub mod compiler;
 pub mod evaluation;
 pub mod lexer;
+pub mod object;
 pub mod parser;
 pub mod semantics;
 pub mod style;
 pub mod token;
+pub mod vm;

@@ -181,13 +181,10 @@ fn test_array_expression() {
 fn test_hash_expression() {
     let input = "{ name = 'bob', age = 15, height, status = :online }";
     let expected = Expr::Hash(vec![
-        (Ident::from("name").into(), Expr::from("bob")),
-        (Ident::from("age").into(), Expr::from(15.0)),
-        (Ident::from("height").into(), Ident::from("height").into()),
-        (
-            Ident::from("status").into(),
-            Expr::Symbol("online".to_string()),
-        ),
+        (Ident::from("name"), Expr::from("bob")),
+        (Ident::from("age"), Expr::from(15.0)),
+        (Ident::from("height"), Ident::from("height").into()),
+        (Ident::from("status"), Expr::Symbol("online".to_string())),
     ])
     .into();
     test_output(input, expected)
@@ -220,18 +217,18 @@ fn test_match_expression() {
             (
                 Expr::from(true),
                 Expr::Infix(
-                    Box::new(Expr::from(1.0).into()),
+                    Box::new(Expr::from(1.0)),
                     String::from("+"),
-                    Box::new(Expr::from(1.0).into()),
+                    Box::new(Expr::from(1.0)),
                 )
                 .into(),
             ),
             (
                 Expr::from(false),
                 Expr::Infix(
-                    Box::new(Expr::from(2.0).into()),
+                    Box::new(Expr::from(2.0)),
                     String::from("+"),
-                    Box::new(Expr::from(2.0).into()),
+                    Box::new(Expr::from(2.0)),
                 )
                 .into(),
             ),
@@ -249,7 +246,7 @@ fn test_output(input: &str, expected: Vec<Stmt>) {
         check_program(program, expected);
     } else if let Err(err) = program {
         println!("Parser had an error:\n{}", err);
-        assert!(false);
+        panic!();
     }
 }
 

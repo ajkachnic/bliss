@@ -1,14 +1,13 @@
 pub mod builtins;
 pub mod env;
-pub mod object;
 
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::rc::Rc;
 
 use crate::ast::{BlockStatement, Expr, Program, Stmt};
+use crate::object::Object;
 use env::Environment;
-use object::Object;
 
 type EvalResult = Result<Object, String>;
 #[derive(Debug, Clone)]
