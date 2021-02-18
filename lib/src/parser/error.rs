@@ -1,4 +1,4 @@
-use crate::{style::emphasize, token::TokenType};
+use crate::{style::emphasize, token::{Position, TokenType}};
 
 use crate::style::{bold, yellow};
 
@@ -24,14 +24,14 @@ pub enum ParserType {
     Hash,
 }
 pub enum ParserError<'a> {
-    ExpectedFound(&'a TokenType, &'a TokenType),
+    ExpectedFound(&'a TokenType, &'a TokenType, Position),
     // NoPrefixFound(&'a Token),
 }
 
 fn assign_msg(err: ParserError) -> String {
     match err {
-    ParserError::ExpectedFound(&TokenType::Assign, got) => {
-      return format!("When parsing an assignment statement, we were looking a {}, but we found something else ({:?}). There's a good change you forgot to put an equals sign, or put another token before it.", bold(&yellow("=")), got)
+    ParserError::ExpectedFound(&TokenType::Assign, got, position) => {
+      return format!("When parsing an assignment statement on line {}, column {}, we were looking a {}, but we found something else ({:?}). There's a good change you forgot to put an equals sign, or put another token before it.", position.line, position.column, bold(&yellow("=")), got)
     },
     // The wildcard is safe here because this is the only expect_peek
     _ => String::new()
@@ -40,11 +40,11 @@ fn assign_msg(err: ParserError) -> String {
 
 fn array_msg(err: ParserError) -> String {
     match err {
-        ParserError::ExpectedFound(&TokenType::RightBracket, got) => {
+        ParserError::ExpectedFound(&TokenType::RightBracket, got, position) => {
             let got = format!("{}", got);
-            format!("When parsing an array, we were looking for right bracket {}, but we found something else ({}).
+            format!("When parsing an array on line {}, column {}, we were looking for right bracket {}, but we found something else ({}).
     
-Hint: Double check to make sure you've closed all your arrays, and you should be on your way", emphasize("]"), emphasize(&got))
+Hint: Double check to make sure you've closed all your arrays, and you should be on your way", position.line, position.column,emphasize("]"), emphasize(&got))
         }
         _ => String::new(),
     }
@@ -52,9 +52,9 @@ Hint: Double check to make sure you've closed all your arrays, and you should be
 
 fn match_msg(err: ParserError) -> String {
     match err {
-    ParserError::ExpectedFound(&TokenType::LeftBrace, got) => format!("When parsing a match expression, we were looking for a left brace {}, but we found something else ({}).
+    ParserError::ExpectedFound(&TokenType::LeftBrace, got, position) => format!("When parsing a match expression on line {}, column {}, we were looking for a left brace {}, but we found something else ({}).
 
- This most likely means that you accidentally used the match operator (::), or you just forgot a left bracket when opening the match", bold(&yellow("{")), got),
+ This most likely means that you accidentally used the match operator (::), or you just forgot a left bracket when opening the match", position.line, position.column, bold(&yellow("{")), got),
     _ => String::new()
   }
 }

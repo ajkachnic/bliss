@@ -44,7 +44,7 @@ pub fn start() {
 
 fn eval(line: &str, context: &mut Context, eval: &mut Evaluator) {
     let l = lexer::Lexer::new(line);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l, line.to_string());
 
     let program = p.parse_program();
     if let Ok(program) = program {

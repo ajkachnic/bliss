@@ -17,7 +17,7 @@ pub fn exec_file(path: &Path) -> std::io::Result<()> {
     let file = fs::read_to_string(path)?;
 
     let lexer = Lexer::new(&file);
-    let mut parser = Parser::new(lexer);
+    let mut parser = Parser::new(lexer, file.to_string());
 
     let program = match parser.parse_program() {
         Ok(program) => program,

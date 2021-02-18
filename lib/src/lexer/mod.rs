@@ -1,4 +1,4 @@
-use std::iter::{Peekable, Enumerate};
+use std::iter::{Enumerate, Peekable};
 use std::str::Chars;
 
 use crate::token;
@@ -117,14 +117,11 @@ impl<'a> Lexer<'a> {
         if let Some((offset, ch)) = self.read() {
             // Light abstraction to make this less ugly
             let tok = self.generate_token(ch);
-            return Token {
-                tok,
-                offset
-            };
+            return Token { tok, offset };
         }
         Token {
             tok: TokenType::EOF,
-            offset: 0
+            offset: 0,
         }
     }
 

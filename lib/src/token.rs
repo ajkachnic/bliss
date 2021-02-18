@@ -1,17 +1,56 @@
 use std::fmt;
 
+#[derive(Debug, Clone)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}
+
+impl Position {
+    pub fn from(offset: usize, source: &str) -> Position {
+        let lines = source.split('\n');
+        let mut line = 0;
+        let mut column = 0;
+
+        let mut current = 0;
+
+        for (index, current_line) in lines.enumerate() {
+            current += current_line.len();
+            // It's in this line
+            if offset < current {
+                line = index;
+                column = current - offset;
+                break;
+            }
+        }
+
+        Position { line, column }
+    }
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "line {}, column {}", self.line, self.column)
+    }
+}
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 pub struct Token {
     pub tok: TokenType,
-    pub offset: usize
+    pub offset: usize,
+}
+
+impl Default for Token {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl Token {
     pub fn new() -> Token {
         Token {
             tok: TokenType::EOF,
-            offset: 0
+            offset: 0,
         }
     }
 }

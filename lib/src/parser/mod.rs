@@ -1,9 +1,9 @@
 use ast::{BlockStatement, Expr, Ident, Program, Stmt};
 use error::{generate_parser_message, ParserError, ParserResult, ParserType};
 
-use crate::ast;
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
+use crate::{ast, token::Position};
 
 mod error;
 
@@ -59,14 +59,16 @@ pub struct Parser<'a> {
     l: Lexer<'a>,
     current_token: Token,
     peek_token: Token,
+    source: String,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(l: Lexer) -> Parser {
+    pub fn new(l: Lexer, source: String) -> Parser {
         let mut p = Parser {
             l,
             current_token: Token::new(),
             peek_token: Token::new(),
+            source,
         };
 
         p.next_token();
@@ -406,7 +408,9 @@ impl<'a> Parser<'a> {
         let mut stmts = vec![];
         self.next_token();
         // self.next_token();
-        while !self.current_token_is(&TokenType::RightBrace) && !self.current_token_is(&TokenType::EOF) {
+        while !self.current_token_is(&TokenType::RightBrace)
+            && !self.current_token_is(&TokenType::EOF)
+        {
             let stmt = self.parse_stmt()?;
             stmts.push(stmt);
             self.next_token();
@@ -498,7 +502,9 @@ impl<'a> Parser<'a> {
                 // Short hand like this
                 // { foo, bar = 5 }
                 // The value of the foo key is the value of the variable foo
-                if self.peek_token_is(&TokenType::Comma) || self.peek_token_is(&TokenType::RightBrace) {
+                if self.peek_token_is(&TokenType::Comma)
+                    || self.peek_token_is(&TokenType::RightBrace)
+                {
                     items.push((ident, key))
                 } else {
                     self.expect_peek(&TokenType::Assign, ParserType::Hash)?;
@@ -557,14 +563,19 @@ impl<'a> Parser<'a> {
     }
     // Errors stuff
     fn peek_error(&mut self, t: &TokenType, context: ParserType) -> String {
-        // TODO: Make better error handling
+        let t = Token {
+            tok: t.clone(),
+            offset: self.peek_token.offset,
+        };
+        let position = Position::from(t.offset, &self.source);
+
         let attempted_msg = generate_parser_message(
-            ParserError::ExpectedFound(t, &self.peek_token.tok),
+            ParserError::ExpectedFound(&t.tok, &self.peek_token.tok, position.clone()),
             context.clone(),
         );
         let mut msg = format!(
-            "Expected next token to be {:?}, got {:?} instead. This was in the {:?} parser",
-            t, self.peek_token, context
+            "On line {}, and column {}, we expected next token to be {}, got {} instead. This was in the {:?} parser", position.line, position.column,
+            t.tok, self.peek_token.tok, context
         );
         if attempted_msg != String::new() {
             msg = attempted_msg;
