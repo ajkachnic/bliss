@@ -1,4 +1,4 @@
-use std::iter::Peekable;
+use std::iter::{Peekable, Enumerate};
 use std::str::Chars;
 
 use crate::token;
@@ -12,27 +12,27 @@ type IsFunc = dyn Fn(char) -> bool;
 
 // TODO: Add positions
 pub struct Lexer<'a> {
-    input: Peekable<Chars<'a>>,
+    input: Peekable<Enumerate<Chars<'a>>>,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &str) -> Lexer {
         Lexer {
-            input: input.chars().peekable(),
+            input: input.chars().enumerate().peekable(),
         }
     }
 
-    fn peek(&mut self) -> Option<&char> {
+    fn peek(&mut self) -> Option<&(usize, char)> {
         self.input.peek()
     }
-    fn read(&mut self) -> Option<char> {
+    fn read(&mut self) -> Option<(usize, char)> {
         self.input.next()
     }
 
     fn peek_is(&mut self, expected: char) -> bool {
         let peek = self.peek();
         match peek {
-            Some(&ch) => ch == expected,
+            Some(&(_, ch)) => ch == expected,
             None => false,
         }
     }
@@ -76,7 +76,7 @@ impl<'a> Lexer<'a> {
             ',' => Token::Comma,
             ';' => Token::Semicolon,
             ':' => {
-                if let Some(&next) = self.peek() {
+                if let Some(&(_, next)) = self.peek() {
                     if Self::is_letter(next) {
                         self.read();
                         let text = self.read_identifier(next);
@@ -114,7 +114,7 @@ impl<'a> Lexer<'a> {
 
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-        if let Some(ch) = self.read() {
+        if let Some((_, ch)) = self.read() {
             // Light abstraction to make this less ugly
             let tok = self.generate_token(ch);
             return tok;
@@ -136,7 +136,7 @@ impl<'a> Lexer<'a> {
     // Takes a function like &Self::is_letter
     fn peek_fn(&mut self, f: &IsFunc) -> bool {
         match self.peek() {
-            Some(&ch) => f(ch),
+            Some(&(_, ch)) => f(ch),
             None => false,
         }
     }
@@ -146,7 +146,7 @@ impl<'a> Lexer<'a> {
         // Allows letters and digits
         // This works because the initial character can only be a letter
         while self.peek_fn(&Self::is_letter) || self.peek_fn(&Self::is_digit) {
-            if let Some(ch) = self.read() {
+            if let Some((_, ch)) = self.read() {
                 ident.push(ch)
             }
         }
@@ -161,7 +161,7 @@ impl<'a> Lexer<'a> {
     fn read_number(&mut self, initial: char) -> String {
         let mut number = String::from(initial);
         while self.peek_fn(&Self::is_digit) {
-            if let Some(ch) = self.read() {
+            if let Some((_, ch)) = self.read() {
                 number.push(ch)
             }
         }
@@ -172,7 +172,7 @@ impl<'a> Lexer<'a> {
         let mut string = String::new();
         // We use the initial character to support strings that use single or double quotes
         while self.peek_not(initial) {
-            if let Some(ch) = self.read() {
+            if let Some((_, ch)) = self.read() {
                 string.push(ch);
             } else {
                 // TODO: Add proper error handling
