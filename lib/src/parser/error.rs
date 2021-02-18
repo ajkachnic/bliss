@@ -1,4 +1,7 @@
-use crate::{style::emphasize, token::{Position, TokenType}};
+use crate::{
+    style::emphasize,
+    token::{Position, TokenType},
+};
 
 use crate::style::{bold, yellow};
 
