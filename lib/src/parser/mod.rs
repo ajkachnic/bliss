@@ -165,7 +165,7 @@ impl<'a> Parser<'a> {
 
     fn parse_expression(&mut self, precedence: Precedence) -> ParserResult<Expr> {
         let token = self.current_token.clone();
-        let mut left = match token.tok.clone() {
+        let mut left = match token.tok {
             TokenType::Ident(_) => self.parse_identifier(),
             TokenType::String(_) => self.parse_string(),
             TokenType::Symbol(_) => self.parse_symbol(),
@@ -584,7 +584,10 @@ impl<'a> Parser<'a> {
     }
     fn no_prefix_parser_error(&mut self, t: Token) -> String {
         let position = Position::from(self.current_token.offset, self.source.as_str());
-        let msg = format!("On {}, no prefix parse function for {} found", position, t.tok);
+        let msg = format!(
+            "On {}, no prefix parse function for {} found",
+            position, t.tok
+        );
         msg
     }
 
