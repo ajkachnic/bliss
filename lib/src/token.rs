@@ -8,24 +8,25 @@ pub struct Position {
 
 impl Position {
     pub fn from(offset: usize, source: &str) -> Position {
-        let lines = source.split('\n');
-        let mut line = 0;
+        let mut total = 0;
+        let mut line = 1;
         let mut column = 0;
 
-        let mut current = 0;
+        for ch in source.chars() {
+            if ch == '\n' {
+                line += 1;
+                column = 0;
+            } else {
+                column += 1;
+            }
 
-        for (index, current_line) in lines.enumerate() {
-            // Account for the newline
-            current += current_line.len() + 1;
-            // It's in this line
-            if offset < current {
-                line = index + 1;
-                // I honestly don't even know why this needs the minus 2, but it works so i'm not complaining
-                column = current - offset + 2;
-                break;
+            total += 1;
+
+            if offset < total {
+                break
             }
         }
-
+        
         Position { line, column }
     }
 }
