@@ -1,7 +1,65 @@
 use std::fmt;
 
+#[derive(Debug, Clone)]
+pub struct Position {
+    pub line: usize,
+    pub column: usize,
+}
+
+impl Position {
+    pub fn from(offset: usize, source: &str) -> Position {
+        let mut total = 0;
+        let mut line = 1;
+        let mut column = 0;
+
+        for ch in source.chars() {
+            if ch == '\n' {
+                line += 1;
+                column = 0;
+            } else {
+                column += 1;
+            }
+
+            total += 1;
+
+            if offset < total {
+                break;
+            }
+        }
+
+        Position { line, column }
+    }
+}
+
+impl fmt::Display for Position {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "line {}, column {}", self.line, self.column)
+    }
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
-pub enum Token {
+pub struct Token {
+    pub tok: TokenType,
+    pub offset: usize,
+}
+
+impl Default for Token {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl Token {
+    pub fn new() -> Token {
+        Token {
+            tok: TokenType::EOF,
+            offset: 0,
+        }
+    }
+}
+
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+pub enum TokenType {
     Illegal,
     EOF,
 
@@ -64,81 +122,81 @@ pub enum Token {
     Then,
 }
 
-impl fmt::Display for Token {
+impl fmt::Display for TokenType {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Token::Ident(value) => write!(f, "{}", value),
-            Token::Number(value) => write!(f, "{}", value),
-            Token::String(value) => write!(f, "'{}'", value),
-            Token::Symbol(value) => write!(f, ":{}", value),
+            TokenType::Ident(value) => write!(f, "{}", value),
+            TokenType::Number(value) => write!(f, "{}", value),
+            TokenType::String(value) => write!(f, "'{}'", value),
+            TokenType::Symbol(value) => write!(f, ":{}", value),
 
-            Token::Assign => write!(f, "="),   // =
-            Token::Plus => write!(f, "+"),     // +
-            Token::Minus => write!(f, "-"),    // -
-            Token::Asterisk => write!(f, "*"), // *
-            Token::Modulus => write!(f, "%"),  // %
-            Token::Slash => write!(f, "/"),    // /
-            Token::Period => write!(f, "."),   // .
-            Token::Arrow => write!(f, "->"),   // ->
-            Token::Range => write!(f, ".."),   // .. (like 0..5)
-            Token::Match => write!(f, "::"),
-            Token::Greater => write!(f, ">"),    // >
-            Token::Less => write!(f, "<"),       // <
-            Token::GreaterEq => write!(f, ">="), // >=
-            Token::LessEq => write!(f, "<="),    // <=
-            Token::Eq => write!(f, "=="),        // ==
-            Token::NotEq => write!(f, "!="),     // !=
-            Token::Bang => write!(f, "!"),       // !
+            TokenType::Assign => write!(f, "="),   // =
+            TokenType::Plus => write!(f, "+"),     // +
+            TokenType::Minus => write!(f, "-"),    // -
+            TokenType::Asterisk => write!(f, "*"), // *
+            TokenType::Modulus => write!(f, "%"),  // %
+            TokenType::Slash => write!(f, "/"),    // /
+            TokenType::Period => write!(f, "."),   // .
+            TokenType::Arrow => write!(f, "->"),   // ->
+            TokenType::Range => write!(f, ".."),   // .. (like 0..5)
+            TokenType::Match => write!(f, "::"),
+            TokenType::Greater => write!(f, ">"),    // >
+            TokenType::Less => write!(f, "<"),       // <
+            TokenType::GreaterEq => write!(f, ">="), // >=
+            TokenType::LessEq => write!(f, "<="),    // <=
+            TokenType::Eq => write!(f, "=="),        // ==
+            TokenType::NotEq => write!(f, "!="),     // !=
+            TokenType::Bang => write!(f, "!"),       // !
 
-            Token::And => write!(f, "&&"),
-            Token::Or => write!(f, "||"),
+            TokenType::And => write!(f, "&&"),
+            TokenType::Or => write!(f, "||"),
 
-            Token::Comma => write!(f, ","),
-            Token::Semicolon => write!(f, ";"),
-            Token::Colon => write!(f, ":"), // :
+            TokenType::Comma => write!(f, ","),
+            TokenType::Semicolon => write!(f, ";"),
+            TokenType::Colon => write!(f, ":"), // :
 
             // Braces 'n stuff
-            Token::LeftParen => write!(f, "("),
-            Token::RightParen => write!(f, ")"),
-            Token::LeftBrace => write!(f, "{{"),
-            Token::RightBrace => write!(f, "}}"),
-            Token::LeftBracket => write!(f, "["),
-            Token::RightBracket => write!(f, "]"),
+            TokenType::LeftParen => write!(f, "("),
+            TokenType::RightParen => write!(f, ")"),
+            TokenType::LeftBrace => write!(f, "{{"),
+            TokenType::RightBrace => write!(f, "}}"),
+            TokenType::LeftBracket => write!(f, "["),
+            TokenType::RightBracket => write!(f, "]"),
 
             // Keywords
             // Might be better to split off into a second enum
 
             // Import related
-            Token::Import => write!(f, "import"),
-            Token::From => write!(f, "from"),
-            Token::As => write!(f, "as"),
+            TokenType::Import => write!(f, "import"),
+            TokenType::From => write!(f, "from"),
+            TokenType::As => write!(f, "as"),
 
-            Token::Return => write!(f, "return"),
-            Token::Function => write!(f, "fn"),
-            Token::True => write!(f, "true"),
-            Token::False => write!(f, "false"),
-            Token::If => write!(f, "if"),
-            Token::Else => write!(f, "else"),
-            Token::Then => write!(f, "then"),
+            TokenType::Return => write!(f, "return"),
+            TokenType::Function => write!(f, "fn"),
+            TokenType::True => write!(f, "true"),
+            TokenType::False => write!(f, "false"),
+            TokenType::If => write!(f, "if"),
+            TokenType::Else => write!(f, "else"),
+            TokenType::Then => write!(f, "then"),
 
-            Token::EOF => write!(f, "EOF"),
+            TokenType::EOF => write!(f, "EOF"),
             _ => write!(f, ""),
         }
     }
 }
 
-pub fn lookup_keyword(name: &str) -> Token {
+pub fn lookup_keyword(name: &str) -> TokenType {
     match name {
-        "import" => Token::Import,
-        "from" => Token::From,
-        "as" => Token::As,
-        "fn" => Token::Function,
-        "return" => Token::Return,
-        "true" => Token::True,
-        "false" => Token::False,
-        "if" => Token::If,
-        "then" => Token::Then,
-        "else" => Token::Else,
-        _ => Token::Ident(name.to_string()),
+        "import" => TokenType::Import,
+        "from" => TokenType::From,
+        "as" => TokenType::As,
+        "fn" => TokenType::Function,
+        "return" => TokenType::Return,
+        "true" => TokenType::True,
+        "false" => TokenType::False,
+        "if" => TokenType::If,
+        "then" => TokenType::Then,
+        "else" => TokenType::Else,
+        _ => TokenType::Ident(name.to_string()),
     }
 }

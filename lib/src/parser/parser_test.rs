@@ -243,7 +243,7 @@ fn test_match_expression() {
 
 fn test_output(input: &str, expected: Vec<Stmt>) {
     let l = Lexer::new(input);
-    let mut p = Parser::new(l);
+    let mut p = Parser::new(l, input.to_string());
     let program = p.parse_program();
     if let Ok(program) = program {
         check_program(program, expected);
