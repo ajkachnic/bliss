@@ -164,7 +164,8 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> ParserResult<Expr> {
-        let mut left = match self.current_token.clone().tok {
+        let token = self.current_token.clone();
+        let mut left = match token.tok.clone() {
             TokenType::Ident(_) => self.parse_identifier(),
             TokenType::String(_) => self.parse_string(),
             TokenType::Symbol(_) => self.parse_symbol(),
@@ -178,8 +179,7 @@ impl<'a> Parser<'a> {
             TokenType::LeftBracket => self.parse_array(),
             TokenType::LeftBrace => self.parse_hash(),
             tok => {
-                self.no_prefix_parser_error(&tok);
-                return Err(format!("No prefix parser found for {}", &tok));
+                return Err(self.no_prefix_parser_error(token));
             }
         };
         while !self.peek_token_is(&TokenType::Semicolon) && precedence < self.peek_precedence() {
@@ -582,8 +582,9 @@ impl<'a> Parser<'a> {
         }
         msg
     }
-    fn no_prefix_parser_error(&mut self, t: &TokenType) -> String {
-        let msg = format!("No prefix parse function for {:?} found", t);
+    fn no_prefix_parser_error(&mut self, t: Token) -> String {
+        let position = Position::from(self.current_token.offset, self.source.as_str());
+        let msg = format!("On {}, no prefix parse function for {} found", position, t.tok);
         msg
     }
 

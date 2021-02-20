@@ -15,11 +15,13 @@ impl Position {
         let mut current = 0;
 
         for (index, current_line) in lines.enumerate() {
-            current += current_line.len();
+            // Account for the newline
+            current += current_line.len() + 1;
             // It's in this line
             if offset < current {
-                line = index;
-                column = current - offset;
+                line = index + 1;
+                // I honestly don't even know why this needs the minus 2, but it works so i'm not complaining
+                column = current - offset + 2;
                 break;
             }
         }
