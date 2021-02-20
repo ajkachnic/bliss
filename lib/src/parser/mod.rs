@@ -178,7 +178,7 @@ impl<'a> Parser<'a> {
             TokenType::Function => self.parse_function(),
             TokenType::LeftBracket => self.parse_array(),
             TokenType::LeftBrace => self.parse_hash(),
-            tok => {
+            _ => {
                 return Err(self.no_prefix_parser_error(token));
             }
         };
