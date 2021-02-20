@@ -1,5 +1,5 @@
 use ast::{BlockStatement, Expr, Ident, Program, Stmt};
-use error::{generate_parser_message, ParserError, ParserResult, ParserType};
+use error::{ParserError, ParserResult, ParserType, generate_parser_message, generate_pretty_error};
 
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -572,6 +572,8 @@ impl<'a> Parser<'a> {
         let attempted_msg = generate_parser_message(
             ParserError::ExpectedFound(&t.tok, &self.peek_token.tok, position.clone()),
             context.clone(),
+            position.clone(),
+            &self.source
         );
         let mut msg = format!(
             "On line {}, and column {}, we expected next token to be {}, got {} instead. This was in the {:?} parser", position.line, position.column,
@@ -584,10 +586,14 @@ impl<'a> Parser<'a> {
     }
     fn no_prefix_parser_error(&mut self, t: Token) -> String {
         let position = Position::from(self.current_token.offset, self.source.as_str());
-        let msg = format!(
+        let mut msg = format!(
             "On {}, no prefix parse function for {} found",
             position, t.tok
         );
+        let error = generate_pretty_error(position, &self.source);
+        msg.push('\n');
+        msg.push_str(&error);
+
         msg
     }
 

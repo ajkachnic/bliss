@@ -62,11 +62,38 @@ fn match_msg(err: ParserError) -> String {
   }
 }
 
-pub fn generate_parser_message(err: ParserError, t: ParserType) -> String {
-    match t {
+pub fn generate_parser_message(err: ParserError, t: ParserType, pos: Position, source: &str) -> String {
+    let mut msg = match t {
         ParserType::Assign => assign_msg(err),
         ParserType::Array => array_msg(err),
         ParserType::Match => match_msg(err),
         _ => String::new(),
+    };
+
+    msg.push('\n');
+
+    let error = generate_pretty_error(pos, source);
+
+    msg.push_str(&error);
+
+    msg
+}
+
+pub fn generate_pretty_error(pos: Position, source: &str) -> String {
+    let lines: Vec<&str> = source.split('\n').collect();
+    let line = lines[pos.line - 1];
+
+    let mut message = format!("{}. ", pos.line);
+
+    let offset = message.len();
+
+    message.push_str(line);
+
+    message.push('\n');
+    for _ in 1..pos.column + offset {
+        message.push(' ');
     }
+    message.push_str("^-- Here");
+
+    message
 }
