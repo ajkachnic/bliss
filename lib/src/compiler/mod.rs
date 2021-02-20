@@ -6,11 +6,15 @@ use crate::ast;
 use crate::code;
 use crate::object;
 
-struct Compiler {
+#[cfg(test)]
+mod compiler_test;
+
+pub struct Compiler {
     instructions: Instructions,
     constants: Vec<Object>,
 }
 
+#[derive(Debug)]
 pub struct Bytecode {
     pub instructions: Instructions,
     pub constants: Vec<Object>,
@@ -48,7 +52,12 @@ impl Compiler {
 
     fn compile_stmt(&mut self, stmt: Stmt) -> Result<(), String> {
         match stmt {
-            Stmt::Expr(expr) => self.compile_expr(expr),
+            Stmt::Expr(expr) => {
+                let res = self.compile_expr(expr);
+                self.emit(Opcode::Pop, vec![]);
+
+                res
+            }
             _ => Ok(()),
         }
     }
@@ -58,6 +67,16 @@ impl Compiler {
             Expr::Infix(left, op, right) => {
                 self.compile_expr(*left)?;
                 self.compile_expr(*right)?;
+
+                match op.as_str() {
+                    "+" => self.emit(Opcode::Add, vec![]),
+                    "-" => self.emit(Opcode::Sub, Vec::new()),
+                    "*" => self.emit(Opcode::Mul, Vec::new()),
+                    "/" => self.emit(Opcode::Div, Vec::new()),
+                    "%" => self.emit(Opcode::Mod, Vec::new()),
+                    _ => return Err(format!("unknown operator {}", op)),
+                };
+
 
                 Ok(())
             }

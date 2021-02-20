@@ -1,4 +1,4 @@
-mod ast;
+pub mod ast;
 pub mod code;
 pub mod compiler;
 pub mod evaluation;

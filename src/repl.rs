@@ -1,15 +1,17 @@
 use evaluation::Evaluator;
+use lexer::Lexer;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use std::cell::RefCell;
 use std::rc::Rc;
+use std::{cell::RefCell, process};
 
-use lib::evaluation;
-use lib::lexer;
+use lib::{code::pretty, compiler::Bytecode, lexer};
 use lib::parser::Parser;
 use lib::semantics;
 use lib::style;
+use lib::vm::VM;
+use lib::{ast::Program, compiler::Compiler, evaluation};
 use semantics::context::Context;
 
 pub fn start() {
@@ -42,37 +44,54 @@ pub fn start() {
     }
 }
 
-fn eval(line: &str, context: &mut Context, eval: &mut Evaluator) {
-    let l = lexer::Lexer::new(line);
-    let mut p = Parser::new(l);
+fn parse(source: &str) -> Program {
+    let lexer = Lexer::new(source);
+    let mut parser = Parser::new(lexer);
 
-    let program = p.parse_program();
-    if let Ok(program) = program {
-        let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(context));
-        match analysis {
-            Ok(_) => {
-                let evaled = eval.eval_program(program);
-                if let Ok(evaled) = evaled {
-                    println!("{}", evaled);
-                } else if let Err(error) = evaled {
-                    println!("An error occurred while evaluating your code:\n{}", error);
-                }
+    let program = parser.parse_program();
+
+    match program {
+        Ok(program) => program,
+        Err(error) => {
+            println!(
+                "{}\nWe had a few problems while parsing your code",
+                style::bold("Parsing Errors:")
+            );
+            println!("{}", error);
+            process::exit(1);
+        }
+    }
+}
+
+fn eval(line: &str, context: &mut Context, eval: &mut Evaluator) {
+    let program = parse(line);
+    let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(context));
+    match analysis {
+        Ok(_) => {
+            let mut compiler = Compiler::new();
+            
+            compiler.compile(program).unwrap();
+            let bytecode: Bytecode = compiler.into();
+            println!("{}", pretty(bytecode.instructions.clone()));
+            let mut vm = VM::new(bytecode);
+            vm.run().unwrap();
+
+            let top = vm.last_stack_top();
+            if let Some(evaled) = top {
+                println!("{}", evaled);
             }
-            Err(errors) => {
-                println!(
+            // else if let Err(error) = evaled {
+            //     println!("An error occurred while evaluating your code:\n{}", error);
+            // }
+        }
+        Err(errors) => {
+            println!(
                     "{}\nSorry to disturb you, but we had some trouble while analyzing your code for validity",
                      style::bold("Semantic Analysis Errors:")
                 );
-                for error in errors {
-                    println!("{}\n", error);
-                }
+            for error in errors {
+                println!("{}\n", error);
             }
         }
-    } else if let Err(error) = program {
-        println!(
-            "{}\nWe had a few problems while parsing your code",
-            style::bold("Parsing Errors:")
-        );
-        println!("{}", error);
     }
 }

@@ -1,6 +1,6 @@
 use bytes::{BufMut, BytesMut};
 use num::FromPrimitive;
-use std::{collections::HashMap, convert::TryInto, fs::read};
+use std::collections::HashMap;
 
 #[cfg(test)]
 #[path = "./code_test.rs"]
@@ -8,23 +8,17 @@ mod code_test;
 
 pub type Instructions = Vec<u8>;
 
-// pub struct Instructions(Vec<u8>);
-
-// impl From<Vec<u8>> for Instructions {
-//   fn from(v: Vec<u8>) -> Instructions {
-//     Instructions(v)
-//   }
-// }
-
-// impl Into<Vec<u8>> for Instructions {
-//   fn into(self) -> Vec<u8> {
-//     self.0
-//   }
-// }
-
 #[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
 pub enum Opcode {
     Constant = 0,
+    Add,
+    Pop,
+    Sub,
+    Mul,
+    Div,
+    Mod,
+    True,
+    False,
 }
 
 impl FromPrimitive for Opcode {
@@ -35,6 +29,14 @@ impl FromPrimitive for Opcode {
     fn from_i64(op: i64) -> Option<Self> {
         match op {
             0 => Some(Opcode::Constant),
+            1 => Some(Opcode::Add),
+            2 => Some(Opcode::Pop),
+            3 => Some(Opcode::Sub),
+            4 => Some(Opcode::Mul),
+            5 => Some(Opcode::Div),
+            6 => Some(Opcode::Mod),
+            7 => Some(Opcode::True),
+            8 => Some(Opcode::False),
             _ => None,
         }
     }
@@ -54,6 +56,50 @@ fn get_definitions() -> HashMap<Opcode, Definition> {
         Definition {
             name: "OpConstant".to_string(),
             operand_widths: vec![2],
+        },
+    );
+
+    defs.insert(
+        Opcode::Add,
+        Definition {
+            name: "OpAdd".to_string(),
+            operand_widths: vec![],
+        },
+    );
+    defs.insert(
+        Opcode::Sub,
+        Definition {
+            name: "OpSub".to_string(),
+            operand_widths: vec![],
+        },
+    );
+    defs.insert(
+        Opcode::Mul,
+        Definition {
+            name: "OpMul".to_string(),
+            operand_widths: vec![],
+        },
+    );
+    defs.insert(
+        Opcode::Div,
+        Definition {
+            name: "OpDiv".to_string(),
+            operand_widths: vec![],
+        },
+    );
+    defs.insert(
+        Opcode::Mod,
+        Definition {
+            name: "OpMod".to_string(),
+            operand_widths: vec![],
+        },
+    );
+
+    defs.insert(
+        Opcode::Pop,
+        Definition {
+            name: "OpPop".to_string(),
+            operand_widths: vec![],
         },
     );
 
@@ -78,7 +124,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
 
     let def: Definition = match definitions.get(&op) {
         Some(def) => def.clone(),
-        None => return Instructions::from(Vec::new()),
+        None => return Vec::new(),
     };
 
     let mut instruction_len = 1;
@@ -96,7 +142,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
             _ => {}
         }
     }
-    Instructions::from(instructions.to_vec())
+    instructions.to_vec()
 }
 pub fn pretty(ins: Instructions) -> String {
     let mut out = String::new();
@@ -124,13 +170,13 @@ pub fn fmt_instruction(def: Definition, operands: Vec<isize>) -> String {
     let count = def.operand_widths.len();
 
     match count {
+        0 => def.name,
         1 => format!("{} {}", def.name, operands[0]),
         _ => format!("ERROR: unhandled operandCount for {}\n", def.name),
     }
 }
 
 pub fn read_operands(def: Definition, ins: Instructions) -> (Vec<isize>, usize) {
-    println!("{:?}, {:?}", &def, &ins);
     let mut operands = Vec::with_capacity(def.operand_widths.len());
     let mut offset = 0;
 
