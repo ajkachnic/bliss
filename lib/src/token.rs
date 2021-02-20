@@ -23,10 +23,10 @@ impl Position {
             total += 1;
 
             if offset < total {
-                break
+                break;
             }
         }
-        
+
         Position { line, column }
     }
 }

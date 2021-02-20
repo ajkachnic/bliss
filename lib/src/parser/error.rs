@@ -62,7 +62,12 @@ fn match_msg(err: ParserError) -> String {
   }
 }
 
-pub fn generate_parser_message(err: ParserError, t: ParserType, pos: Position, source: &str) -> String {
+pub fn generate_parser_message(
+    err: ParserError,
+    t: ParserType,
+    pos: Position,
+    source: &str,
+) -> String {
     let mut msg = match t {
         ParserType::Assign => assign_msg(err),
         ParserType::Array => array_msg(err),

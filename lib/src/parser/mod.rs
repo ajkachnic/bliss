@@ -1,5 +1,7 @@
 use ast::{BlockStatement, Expr, Ident, Program, Stmt};
-use error::{ParserError, ParserResult, ParserType, generate_parser_message, generate_pretty_error};
+use error::{
+    generate_parser_message, generate_pretty_error, ParserError, ParserResult, ParserType,
+};
 
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
@@ -573,7 +575,7 @@ impl<'a> Parser<'a> {
             ParserError::ExpectedFound(&t.tok, &self.peek_token.tok, position.clone()),
             context.clone(),
             position.clone(),
-            &self.source
+            &self.source,
         );
         let mut msg = format!(
             "On line {}, and column {}, we expected next token to be {}, got {} instead. This was in the {:?} parser", position.line, position.column,
