@@ -182,6 +182,36 @@ fn test_boolean() {
     run_tests(tests);
 }
 
+#[test]
+fn test_conditionals() {
+    let tests = vec![
+        TestCase {
+            input: "if true { 10 } else { 5 } 50",
+            expected_constants: vec![Object::Number(10.0), Object::Number(5.0), Object::Number(50.0)],
+            expected_instructions: vec![
+                // 0000
+                code::make(Opcode::True, vec![]),
+                // 0001
+                code::make(Opcode::JumpNotTruthy, vec![10]),
+                // 0004
+                code::make(Opcode::Constant, vec![0]),
+                // 0007
+                code::make(Opcode::Jump, vec![13]),
+                // 0010
+                code::make(Opcode::Constant, vec![1]),
+                // 0013
+                code::make(Opcode::Pop, vec![]),
+                // 0014
+                code::make(Opcode::Constant, vec![2]),
+                // 0017
+                code::make(Opcode::Pop, vec![]),
+            ]
+        }
+    ];
+
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for test in tests {
         let program = parse(test.input);
@@ -190,13 +220,13 @@ fn run_tests(tests: Vec<TestCase>) {
             panic!(error);
         }
 
-        assert_eq!(test.expected_constants, comp.constants);
         let expected_instructions = test.expected_instructions.concat();
-
+        
         let expected = pretty(expected_instructions);
         let actual = pretty(comp.instructions);
-
+        
         assert_eq!(expected, actual);
+        assert_eq!(test.expected_constants, comp.constants);
     }
 }
 

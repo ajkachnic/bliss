@@ -39,6 +39,16 @@ fn test_boolean() {
     run_tests(tests);
 }
 
+#[test]
+fn test_conditionals() {
+    let tests = vec![
+        ("if true  { 10 * 5 } else { 5 }", Object::Number(50.0)),
+        ("if false { 0 } else { 5 > 3 }", Object::Boolean(true)),
+    ];
+
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for (input, output) in tests {
         let program = parse(input);

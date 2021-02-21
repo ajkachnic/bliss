@@ -1,4 +1,5 @@
 use std::unreachable;
+use num::FromPrimitive;
 
 use ast::{Expr, Program, Stmt};
 use code::{Instructions, Opcode};
@@ -14,6 +15,17 @@ mod compiler_test;
 pub struct Compiler {
     instructions: Instructions,
     constants: Vec<Object>,
+    // Last is the most recently emitted instructions
+    // And previous is the one before that
+    last_instruction: EmittedInstruction,
+    previous_instruction: EmittedInstruction
+}
+
+// Copy helps ALOT here
+#[derive(Clone, Copy)]
+pub struct EmittedInstruction {
+    code: Opcode,
+    position: usize
 }
 
 #[derive(Debug)]
@@ -39,9 +51,15 @@ impl Into<Bytecode> for Compiler {
 
 impl Compiler {
     pub fn new() -> Self {
+        let ins = EmittedInstruction {
+            code: Opcode::Pop,
+            position: 0
+        };
         Compiler {
             instructions: Vec::new(),
             constants: Vec::new(),
+            last_instruction: ins.clone(),
+            previous_instruction: ins,
         }
     }
 
@@ -121,6 +139,39 @@ impl Compiler {
                 };
                 Ok(())
             },
+            Expr::If { condition, consequence, alternative} => {
+                self.compile_expr(*condition)?;
+
+                // Value will be changed later
+                let jump_not_truthy_pos = 
+                    self.emit(Opcode::JumpNotTruthy, vec![9999]);
+
+                self.compile(consequence)?;
+
+                if self.last_instruction_is(Opcode::Pop) {
+                    self.remove_last_pop();
+                }
+                // Alternative Handling
+
+                // Value will be changed later
+                let jump_pos = 
+                    self.emit(Opcode::Jump, vec![9999]);
+
+                let after_consequence_pos = self.instructions.len();
+
+                self.change_operand(jump_not_truthy_pos, after_consequence_pos);
+
+                self.compile(alternative)?;
+
+                if self.last_instruction_is(Opcode::Pop) {
+                    self.remove_last_pop();
+                }
+
+                let after_alternative_pos = self.instructions.len();
+                self.change_operand(jump_pos, after_alternative_pos);
+
+                Ok(())
+            }
             _ => Ok(()),
         }
     }
@@ -132,7 +183,10 @@ impl Compiler {
 
     fn emit(&mut self, op: Opcode, operands: Vec<usize>) -> usize {
         let ins = code::make(op, operands);
-        self.add_instructions(ins)
+        let pos = self.add_instructions(ins);
+
+        self.set_last(op, pos);
+        pos
     }
 
     fn add_instructions(&mut self, ins: Vec<u8>) -> usize {
@@ -143,5 +197,38 @@ impl Compiler {
         }
 
         old_pos
+    }
+
+    fn set_last(&mut self, op: Opcode, pos: usize) {
+        let previous = self.last_instruction;
+        let last = EmittedInstruction { code: op, position: pos };
+
+        self.previous_instruction = previous;
+        self.last_instruction = last;
+    }
+
+    fn last_instruction_is(&mut self, op: Opcode) -> bool {
+        self.last_instruction.code == op
+    }
+
+    fn remove_last_pop(&mut self) {
+        let pos = self.last_instruction.position;
+        self.instructions = self.instructions[0..pos].to_vec();
+        self.last_instruction = self.previous_instruction;
+    }
+
+    fn change_operand(&mut self, pos: usize, operand: usize) {
+        let op = Opcode::from_u8(self.instructions[pos]).unwrap();
+        let new = code::make(op, vec![operand]);
+
+        self.replace_instruction(pos, new);
+    }
+
+    fn replace_instruction(&mut self, pos: usize, new: Instructions) {
+        let mut i = 0;
+        while i < new.len() {
+            self.instructions[pos + i] = new[i];
+            i += 1;
+        }
     }
 }

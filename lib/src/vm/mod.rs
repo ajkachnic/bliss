@@ -1,7 +1,7 @@
 use num::FromPrimitive;
 use std::usize;
 
-use code::{Instructions, Opcode};
+use code::{Instructions, Opcode, read_u16};
 use object::Object;
 
 use crate::code;
@@ -71,6 +71,21 @@ impl VM {
                 Opcode::Pop => {
                     self.pop();
                 },
+                Opcode::Jump => {
+                    let ins = self.instructions[ip + 1..].to_vec();
+                    let pos = code::read_u16(ins);
+                    ip = pos as usize - 1;
+                },
+                Opcode::JumpNotTruthy => {
+                    let ins = self.instructions[ip + 1..].to_vec();
+                    let pos = code::read_u16(ins);
+                    ip += 2;
+
+                    let condition = self.pop();
+                    if !Self::is_truthy(condition) {
+                        ip = pos as usize - 1;
+                    }
+                },
                 _ => {}
             };
 
@@ -83,13 +98,9 @@ impl VM {
     fn execute_bang_op(&mut self) -> Result<(), String> {
         let operand = self.pop();
 
-        let opposite = match operand {
-            Object::Boolean(true) => Object::Boolean(false),
-            Object::Boolean(false) => Object::Boolean(true),
-            _ => Object::Boolean(false)
-        };
+        let opposite = !Self::is_truthy(operand);
 
-        self.push(opposite)
+        self.push(Object::Boolean(opposite))
     }
 
     fn execute_minus_op(&mut self) -> Result<(), String> {
@@ -171,5 +182,12 @@ impl VM {
     pub fn pop(&mut self) -> Object {
         self.sp -= 1;
         self.stack[self.sp].clone()
+    }
+
+    pub fn is_truthy(obj: Object) -> bool {
+        match obj {
+            Object::Boolean(false) => false,
+            _ => true
+        }
     }
 }

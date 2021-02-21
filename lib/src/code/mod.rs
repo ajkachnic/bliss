@@ -24,7 +24,9 @@ pub enum Opcode {
     Greater,
     GreaterEqual,
     Minus,
-    Bang
+    Bang,
+    JumpNotTruthy,
+    Jump,
 }
 
 impl FromPrimitive for Opcode {
@@ -49,6 +51,8 @@ impl FromPrimitive for Opcode {
             12 => Some(Opcode::GreaterEqual),
             13 => Some(Opcode::Minus),
             14 => Some(Opcode::Bang),
+            15 => Some(Opcode::JumpNotTruthy),
+            16 => Some(Opcode::Jump),
             _ => None,
         }
     }
@@ -125,6 +129,15 @@ fn get_definitions() -> HashMap<Opcode, Definition> {
     defs.insert(
         Opcode::Bang,
         ("OpBang", vec![])
+    );
+
+    defs.insert(
+        Opcode::JumpNotTruthy, 
+        ("OpJumpTruthy", vec![2])
+    );
+    defs.insert(
+        Opcode::Jump, 
+        ("OpJump", vec![2])
     );
 
     defs
