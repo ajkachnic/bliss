@@ -242,6 +242,66 @@ fn test_assignment_stmts() {
     run_tests(tests);
 }
 
+#[test]
+fn test_strings() {
+    let tests = vec![
+        TestCase {
+            input: "'foobar'",
+            expected_constants: vec![Object::from("foobar")],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Pop, vec![])
+            ]
+        },
+        TestCase {
+            input: "'hello' + ' world!'",
+            expected_constants: vec![
+                Object::from("hello"),
+                Object::from(" world!")
+            ],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::Add, vec![]),
+                code::make(Opcode::Pop, vec![])
+            ]
+        },
+    ];
+
+    run_tests(tests);
+}
+
+#[test]
+fn test_array() {
+    let tests = vec![
+        TestCase {
+            input: "[]",
+            expected_constants: vec![],
+            expected_instructions: vec![
+                code::make(Opcode::Array, vec![0]),
+                code::make(Opcode::Pop, vec![])
+            ]
+        },
+        TestCase {
+            input: "[1, 2, 3]",
+            expected_constants: vec![
+                Object::Number(1.0),
+                Object::Number(2.0),
+                Object::Number(3.0),
+            ],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::Constant, vec![2]),
+                code::make(Opcode::Array, vec![3]),
+                code::make(Opcode::Pop, vec![])
+            ]
+        },
+    ];
+
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for test in tests {
         let program = parse(test.input);

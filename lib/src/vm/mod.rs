@@ -114,6 +114,18 @@ impl VM {
 
                     self.push(self.globals[pos as usize].clone())?;
                 },
+                Opcode::Array => {
+                    let ins = self.instructions[ip + 1..].to_vec();
+                    let len = code::read_u16(ins) as usize;
+
+                    ip += 2;
+
+                    let array = self.build_array(self.sp - len, self.sp);
+
+                    self.sp = self.sp - len;
+
+                    self.push(array)?;
+                }
                 _ => {}
             };
 
@@ -163,7 +175,10 @@ impl VM {
         match (left, right) {
             (Object::Number(left), Object::Number(right)) => {
                 self.execute_binary_number_op(op, left, right)
-            }
+            },
+            (Object::String(left), Object::String(right)) => {
+                self.execute_binary_string_op(op, left, right)
+            },
             (left, right) => Err(format!(
                 "Invalid types for binary operation: {} {}",
                 left, right
@@ -190,6 +205,30 @@ impl VM {
         };
 
         self.push(res)
+    }
+
+    fn execute_binary_string_op(
+        &mut self,
+        op: Opcode,
+        left: String,
+        right: String
+    ) -> Result<(), String> {
+        let res = match op {
+            Opcode::Add => [left, right].concat(),
+            _ => return Err(format!("Unknown operator: {:?}", op)),
+        };
+
+        self.push(Object::String(res))
+    }
+
+    fn build_array(&mut self, start: usize, end: usize) -> Object {
+        let mut elements = Vec::with_capacity(end - start);
+
+        for i in start..end {
+            elements.push(self.stack[i].clone())
+        }
+
+        Object::Array(elements)
     }
 
     pub fn push(&mut self, obj: Object) -> Result<(), String> {

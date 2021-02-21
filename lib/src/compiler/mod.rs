@@ -162,6 +162,12 @@ impl Compiler {
                 self.emit(Opcode::Constant, vec![constant]);
                 Ok(())
             },
+            Expr::String(string) => {
+                let string = Object::String(string);
+                let constant = self.add_constant(string);
+                self.emit(Opcode::Constant, vec![constant]);
+                Ok(())
+            },
             Expr::Boolean(b) => {
                 let op = if b { Opcode::True } else { Opcode::False };
                 self.emit(op, vec![]);
@@ -209,7 +215,16 @@ impl Compiler {
                 self.change_operand(jump_pos, after_alternative_pos);
 
                 Ok(())
-            }
+            },
+            Expr::Array(elements) => {
+                let len = elements.len();
+                for el in elements {
+                    self.compile_expr(el)?;
+                }
+
+                self.emit(Opcode::Array, vec![len]);
+                Ok(())
+            },
             _ => Ok(()),
         }
     }

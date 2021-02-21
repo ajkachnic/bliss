@@ -58,6 +58,30 @@ fn test_assign_stmts() {
     run_tests(tests);
 }
 
+#[test]
+fn test_strings() {
+    let tests = vec![
+        ("'foobar'", Object::from("foobar")),
+        ("'hello' + ' world!'", Object::from("hello world!")),
+    ];
+
+    run_tests(tests);
+}
+
+#[test]
+fn test_arrays() {
+    let tests = vec![
+        ("[]", Object::Array(vec![])),
+        ("[1, 2, 3]", Object::Array(vec![
+            Object::Number(1.0),
+            Object::Number(2.0),
+            Object::Number(3.0),
+        ])),
+    ];
+
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for (input, output) in tests {
         let program = parse(input);

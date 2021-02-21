@@ -27,6 +27,12 @@ pub enum Object {
     Null,
 }
 
+impl From<&'static str> for Object {
+    fn from(from: &'static str) -> Object {
+        Object::String(from.to_string())
+    }
+}
+
 // impl Eq for Object {}
 
 impl fmt::Display for Object {

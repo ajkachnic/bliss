@@ -29,6 +29,7 @@ pub enum Opcode {
     Jump,
     GetGlobal,
     SetGlobal,
+    Array,
 }
 
 impl FromPrimitive for Opcode {
@@ -57,6 +58,7 @@ impl FromPrimitive for Opcode {
             16 => Some(Opcode::Jump),
             17 => Some(Opcode::GetGlobal),
             18 => Some(Opcode::SetGlobal),
+            19 => Some(Opcode::Array),
             _ => None,
         }
     }
@@ -151,6 +153,12 @@ fn get_definitions() -> HashMap<Opcode, Definition> {
     defs.insert(
         Opcode::SetGlobal, 
         ("OpSetGlobal", vec![2])
+    );
+
+    defs.insert(
+        Opcode::Array,
+        // Arbitrary limit of 65535
+        ("OpArray", vec![2])
     );
 
     defs
