@@ -212,6 +212,36 @@ fn test_conditionals() {
     run_tests(tests);
 }
 
+#[test]
+fn test_assignment_stmts() {
+    let tests = vec![
+        TestCase {
+            input: "one = 1;
+            two = 2;",
+            expected_constants: vec![Object::Number(1.0), Object::Number(2.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::SetGlobal, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::SetGlobal, vec![1]),
+            ]
+        },
+        TestCase {
+            input: "one = 1;
+            one;",
+            expected_constants: vec![Object::Number(1.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::SetGlobal, vec![0]),
+                code::make(Opcode::GetGlobal, vec![0]),
+                code::make(Opcode::Pop, vec![]),
+            ]
+        },
+    ];
+
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for test in tests {
         let program = parse(test.input);

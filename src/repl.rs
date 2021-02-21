@@ -3,30 +3,41 @@ use lexer::Lexer;
 use rustyline::error::ReadlineError;
 use rustyline::Editor;
 
-use std::rc::Rc;
+use std::{borrow::BorrowMut, rc::Rc};
 use std::{cell::RefCell, process};
 
-use lib::{code::pretty, compiler::Bytecode, lexer};
+use lib::{code::pretty, compiler::{Bytecode, symbol_table::Symbol}, lexer, object::Object};
 use lib::parser::Parser;
 use lib::semantics;
 use lib::style;
 use lib::vm::VM;
+use lib::compiler::symbol_table::SymbolTable;
 use lib::{ast::Program, compiler::Compiler, evaluation};
 use semantics::context::Context;
+
+struct State {
+    symbols: SymbolTable,
+    constants: Vec<Object>,
+    globals: Vec<Object>,
+}
 
 pub fn start() {
     let mut rl = Editor::<()>::new();
     let mut context = Context {
         ..Default::default()
     };
-    let env = evaluation::env::Environment::new();
-    let mut evaluator = evaluation::Evaluator::new(Rc::new(RefCell::new(env)));
+    let mut state = State {
+        symbols: SymbolTable::new(),
+        constants: vec![],
+        globals: vec![]
+    };
+
     loop {
         let readline = rl.readline(">> ");
         match readline {
             Ok(line) => {
                 rl.add_history_entry(line.as_str());
-                eval(line.as_str(), &mut context, &mut evaluator)
+                eval(line.as_str(), &mut context, &mut state)
             }
             Err(ReadlineError::Interrupted) => {
                 println!("CTRL-C");
@@ -63,26 +74,27 @@ fn parse(source: &str) -> Program {
     }
 }
 
-fn eval(line: &str, context: &mut Context, eval: &mut Evaluator) {
+fn eval(line: &str, context: &mut Context, state: &mut State) {
     let program = parse(line);
     let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(context));
     match analysis {
         Ok(_) => {
-            let mut compiler = Compiler::new();
+            let mut compiler = Compiler::new_with_state(state.symbols.to_owned(), state.constants.to_owned());
             
             compiler.compile(program).unwrap();
-            let bytecode: Bytecode = compiler.into();
-            println!("{}", pretty(bytecode.instructions.clone()));
-            let mut vm = VM::new(bytecode);
+            let bytecode: Bytecode = compiler.clone().into();
+
+            state.constants = bytecode.constants.to_owned();
+            state.symbols = compiler.symbols;
+            let mut vm = VM::new_with_globals(bytecode, state.globals.to_owned());
             vm.run().unwrap();
 
             let top = vm.last_stack_top();
             if let Some(evaled) = top {
                 println!("{}", evaled);
             }
-            // else if let Err(error) = evaled {
-            //     println!("An error occurred while evaluating your code:\n{}", error);
-            // }
+
+            state.globals = vm.globals;
         }
         Err(errors) => {
             println!(

@@ -1,7 +1,7 @@
 use num::FromPrimitive;
 use std::usize;
 
-use code::{Instructions, Opcode, read_u16};
+use code::{Instructions, Opcode};
 use object::Object;
 
 use crate::code;
@@ -12,13 +12,15 @@ use crate::object;
 mod vm_test;
 
 const STACK_SIZE: usize = 2048;
+const GLOBALS_SIZE: usize = 65536;
 
 pub struct VM {
     constants: Vec<Object>,
     instructions: Instructions,
 
     stack: Vec<Object>,
-    sp: usize, // stack-point
+    pub globals: Vec<Object>,
+    sp: usize, // stack pointer
 }
 
 impl VM {
@@ -28,8 +30,16 @@ impl VM {
             constants: bytecode.constants,
 
             stack: Vec::with_capacity(STACK_SIZE),
+            globals: Vec::with_capacity(GLOBALS_SIZE),
             sp: 0,
         }
+    }
+
+    pub fn new_with_globals(bytecode: compiler::Bytecode, s: Vec<Object>) -> Self {
+        let mut vm = Self::new(bytecode);
+        vm.globals = s;
+
+        vm
     }
 
     pub fn stack_top(&self) -> Option<Object> {
@@ -85,6 +95,24 @@ impl VM {
                     if !Self::is_truthy(condition) {
                         ip = pos as usize - 1;
                     }
+                },
+                Opcode::SetGlobal => {
+                    let ins = self.instructions[ip + 1..].to_vec();
+                    let pos = code::read_u16(ins);
+
+                    ip += 2;
+
+                    let obj = self.pop();
+
+                    self.set_global(pos as usize, obj)?;
+                },
+                Opcode::GetGlobal => {
+                    let ins = self.instructions[ip + 1..].to_vec();
+                    let pos = code::read_u16(ins);
+
+                    ip += 2;
+
+                    self.push(self.globals[pos as usize].clone())?;
                 },
                 _ => {}
             };
@@ -179,15 +207,29 @@ impl VM {
         Ok(())
     }
 
-    pub fn pop(&mut self) -> Object {
+    fn pop(&mut self) -> Object {
         self.sp -= 1;
         self.stack[self.sp].clone()
     }
 
-    pub fn is_truthy(obj: Object) -> bool {
+    fn is_truthy(obj: Object) -> bool {
         match obj {
             Object::Boolean(false) => false,
             _ => true
         }
     }
+
+    fn set_global(&mut self, index: usize, obj: Object) -> Result<(), String> {
+        if index >= GLOBALS_SIZE {
+            // I don't think a "global overflow" is thing lmao
+            return Err("globals overflow".to_string());
+        }
+        if index >= self.globals.len() {
+            self.globals.push(obj);
+        } else {
+            self.globals[index] = obj;
+        }
+
+        Ok(())
+    }    
 }

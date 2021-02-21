@@ -1,24 +1,29 @@
-use std::unreachable;
+use std::{unreachable};
 use num::FromPrimitive;
 
 use ast::{Expr, Program, Stmt};
 use code::{Instructions, Opcode};
 use object::Object;
+use symbol_table::{Symbol, SymbolTable};
 
 use crate::ast;
 use crate::code;
 use crate::object;
 
+pub mod symbol_table;
+
 #[cfg(test)]
 mod compiler_test;
 
+#[derive(Clone)]
 pub struct Compiler {
     instructions: Instructions,
     constants: Vec<Object>,
     // Last is the most recently emitted instructions
     // And previous is the one before that
     last_instruction: EmittedInstruction,
-    previous_instruction: EmittedInstruction
+    previous_instruction: EmittedInstruction,
+    pub symbols: SymbolTable
 }
 
 // Copy helps ALOT here
@@ -58,9 +63,18 @@ impl Compiler {
         Compiler {
             instructions: Vec::new(),
             constants: Vec::new(),
-            last_instruction: ins.clone(),
+            last_instruction: ins,
             previous_instruction: ins,
+            symbols: SymbolTable::new()
         }
+    }
+
+    pub fn new_with_state(s: SymbolTable, constants: Vec<Object>) -> Self {
+        let mut compiler = Self::new();
+        compiler.symbols = s;
+        compiler.constants = constants;
+
+        compiler
     }
 
     pub fn compile(&mut self, program: Program) -> Result<(), String> {
@@ -72,6 +86,20 @@ impl Compiler {
 
     fn compile_stmt(&mut self, stmt: Stmt) -> Result<(), String> {
         match stmt {
+            Stmt::Assign(name, value) => {
+                self.compile_expr(value)?;
+
+                let symbol = match name {
+                    Expr::Ident(name) => {
+                        self.symbols.define(name.0)
+                    },
+                    _ => unreachable!()
+                };
+
+                self.emit(Opcode::SetGlobal, vec![symbol.index]);
+
+                Ok(())
+            },
             Stmt::Expr(expr) => {
                 let res = self.compile_expr(expr);
                 self.emit(Opcode::Pop, vec![]);
@@ -84,6 +112,16 @@ impl Compiler {
 
     fn compile_expr(&mut self, expr: Expr) -> Result<(), String> {
         match expr {
+            Expr::Ident(ident) => {
+                let symbol = self.symbols.resolve(&ident.0);
+                match symbol {
+                    Some(symbol) => {
+                        self.emit(Opcode::GetGlobal, vec![symbol.index]);
+                    },
+                    None => return Err(format!("Undefined variable: {}", ident.0))
+                }
+                Ok(())
+            },
             Expr::Infix(left, op, right) => {
                 let op = op.as_str();
                 if op == "<" || op == "<=" {

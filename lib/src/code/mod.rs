@@ -27,6 +27,8 @@ pub enum Opcode {
     Bang,
     JumpNotTruthy,
     Jump,
+    GetGlobal,
+    SetGlobal,
 }
 
 impl FromPrimitive for Opcode {
@@ -53,6 +55,8 @@ impl FromPrimitive for Opcode {
             14 => Some(Opcode::Bang),
             15 => Some(Opcode::JumpNotTruthy),
             16 => Some(Opcode::Jump),
+            17 => Some(Opcode::GetGlobal),
+            18 => Some(Opcode::SetGlobal),
             _ => None,
         }
     }
@@ -138,6 +142,15 @@ fn get_definitions() -> HashMap<Opcode, Definition> {
     defs.insert(
         Opcode::Jump, 
         ("OpJump", vec![2])
+    );
+
+    defs.insert(
+        Opcode::GetGlobal, 
+        ("OpGetGlobal", vec![2])
+    );
+    defs.insert(
+        Opcode::SetGlobal, 
+        ("OpSetGlobal", vec![2])
     );
 
     defs

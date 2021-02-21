@@ -49,6 +49,15 @@ fn test_conditionals() {
     run_tests(tests);
 }
 
+#[test]
+fn test_assign_stmts() {
+    let tests = vec![
+        ("one = 1; one", Object::Number(1.0)),
+        ("one = 1; two = 2; one + two", Object::Number(3.0)),
+    ];
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for (input, output) in tests {
         let program = parse(input);
