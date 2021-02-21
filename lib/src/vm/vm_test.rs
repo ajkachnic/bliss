@@ -23,6 +23,16 @@ fn test_arithmetic() {
     run_tests(tests);
 }
 
+#[test]
+fn test_boolean() {
+    let tests: Vec<TestCase> = vec![
+        ("true", Object::Boolean(true)),
+        ("false", Object::Boolean(false)),
+    ];
+
+    run_tests(tests);
+}
+
 fn run_tests(tests: Vec<TestCase>) {
     for (input, output) in tests {
         let program = parse(input);

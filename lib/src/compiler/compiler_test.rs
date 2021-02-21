@@ -75,6 +75,14 @@ fn test_arithmetic() {
                 code::make(Opcode::Pop, Vec::new()),
             ],
         },
+    ];
+
+    run_tests(tests);
+}
+
+#[test]
+fn test_boolean() {
+    let tests = vec![
         TestCase {
             input: "true",
             expected_constants: vec![],
@@ -88,6 +96,66 @@ fn test_arithmetic() {
             expected_constants: vec![],
             expected_instructions: vec![
                 code::make(Opcode::False, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "1 > 2",
+            expected_constants: vec![Object::Number(1.0), Object::Number(2.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::Greater, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "1 >= 2",
+            expected_constants: vec![Object::Number(1.0), Object::Number(2.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::GreaterEqual, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "1 < 2",
+            expected_constants: vec![Object::Number(2.0), Object::Number(1.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::Greater, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "1 <= 2",
+            expected_constants: vec![Object::Number(2.0), Object::Number(1.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::GreaterEqual, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "1 == 2",
+            expected_constants: vec![Object::Number(1.0), Object::Number(2.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::Equal, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "1 != 2",
+            expected_constants: vec![Object::Number(1.0), Object::Number(2.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Constant, vec![1]),
+                code::make(Opcode::NotEqual, Vec::new()),
                 code::make(Opcode::Pop, Vec::new()),
             ],
         },

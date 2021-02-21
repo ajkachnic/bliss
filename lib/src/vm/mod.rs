@@ -58,12 +58,17 @@ impl VM {
 
                     ip += 2;
                 }
-                Opcode::Add | Opcode::Sub | Opcode::Mul | Opcode::Div | Opcode::Mod => {
+                Opcode::Add | Opcode::Sub | Opcode::Mul | Opcode::Div | Opcode::Mod | Opcode::Greater | Opcode::GreaterEqual => {
                     self.execute_binary_op(op)?;
-                }
+                },
+                Opcode::Equal | Opcode::NotEqual => {
+                    self.execute_equality_op(op)?;
+                },
+                Opcode::True => self.push(Object::Boolean(true))?,
+                Opcode::False => self.push(Object::Boolean(false))?,
                 Opcode::Pop => {
                     self.pop();
-                }
+                },
                 _ => {}
             };
 
@@ -71,6 +76,19 @@ impl VM {
         }
 
         Ok(())
+    }
+
+    fn execute_equality_op(&mut self, op: Opcode) -> Result<(), String> {
+        let right = self.pop();
+        let left = self.pop();
+
+        let result = match op {
+            Opcode::Equal => left == right,
+            Opcode::NotEqual => left != right,
+            _ => return Err(format!("Unsupported equality operator: {:?}", op))
+        };
+
+        self.push(Object::Boolean(result))
     }
 
     fn execute_binary_op(&mut self, op: Opcode) -> Result<(), String> {
@@ -95,17 +113,18 @@ impl VM {
         right: f64,
     ) -> Result<(), String> {
         let res = match op {
-            Opcode::Add => left + right,
-            Opcode::Sub => left - right,
-            Opcode::Mul => left * right,
-            Opcode::Div => left / right,
-            Opcode::Mod => left % right,
+            Opcode::Add => Object::Number(left + right),
+            Opcode::Sub => Object::Number(left - right),
+            Opcode::Mul => Object::Number(left * right),
+            Opcode::Div => Object::Number(left / right),
+            Opcode::Mod => Object::Number(left % right),
+
+            Opcode::Greater => Object::Boolean(left > right),
+            Opcode::GreaterEqual => Object::Boolean(left >= right),
             _ => return Err(format!("Unknown operator: {:?}", op)),
         };
 
-        self.push(Object::Number(res))?;
-        println!("stack: {:?}, pointer: {:?}", self.stack, self.sp);
-        Ok(())
+        self.push(res)
     }
 
     pub fn push(&mut self, obj: Object) -> Result<(), String> {

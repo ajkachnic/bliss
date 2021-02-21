@@ -1,3 +1,5 @@
+use std::unreachable;
+
 use ast::{Expr, Program, Stmt};
 use code::{Instructions, Opcode};
 use object::Object;
@@ -65,25 +67,48 @@ impl Compiler {
     fn compile_expr(&mut self, expr: Expr) -> Result<(), String> {
         match expr {
             Expr::Infix(left, op, right) => {
+                let op = op.as_str();
+                if op == "<" || op == "<=" {
+                    // Reverse the order, so we use less instructions
+                    self.compile_expr(*right)?;
+                    self.compile_expr(*left)?;
+
+                    match op {
+                        "<" => self.emit(Opcode::Greater, Vec::new()),
+                        "<=" => self.emit(Opcode::GreaterEqual, Vec::new()),
+                        _ => unreachable!()
+                    };
+
+                    return Ok(())
+                }
                 self.compile_expr(*left)?;
                 self.compile_expr(*right)?;
 
-                match op.as_str() {
+                
+                match op {
                     "+" => self.emit(Opcode::Add, vec![]),
                     "-" => self.emit(Opcode::Sub, Vec::new()),
                     "*" => self.emit(Opcode::Mul, Vec::new()),
                     "/" => self.emit(Opcode::Div, Vec::new()),
                     "%" => self.emit(Opcode::Mod, Vec::new()),
+                    ">" => self.emit(Opcode::Greater, Vec::new()),
+                    ">=" => self.emit(Opcode::GreaterEqual, Vec::new()),
+                    "==" => self.emit(Opcode::Equal, Vec::new()),
+                    "!=" => self.emit(Opcode::NotEqual, Vec::new()),
                     _ => return Err(format!("unknown operator {}", op)),
                 };
-
-
+                
                 Ok(())
             }
             Expr::Number(num) => {
                 let num = Object::Number(num);
                 let constant = self.add_constant(num);
                 self.emit(Opcode::Constant, vec![constant]);
+                Ok(())
+            },
+            Expr::Boolean(b) => {
+                let op = if b { Opcode::True } else { Opcode::False };
+                self.emit(op, vec![]);
                 Ok(())
             }
             _ => Ok(()),

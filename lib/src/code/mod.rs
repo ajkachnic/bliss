@@ -19,6 +19,10 @@ pub enum Opcode {
     Mod,
     True,
     False,
+    Equal,
+    NotEqual,
+    Greater,
+    GreaterEqual
 }
 
 impl FromPrimitive for Opcode {
@@ -37,70 +41,77 @@ impl FromPrimitive for Opcode {
             6 => Some(Opcode::Mod),
             7 => Some(Opcode::True),
             8 => Some(Opcode::False),
+            9 => Some(Opcode::Equal),
+            10 => Some(Opcode::NotEqual),
+            11 => Some(Opcode::Greater),
+            12 => Some(Opcode::GreaterEqual),
             _ => None,
         }
     }
 }
 
-#[derive(Clone, Debug)]
-pub struct Definition {
-    pub name: String,
-    pub operand_widths: Vec<u8>,
-}
+
+type Definition = (&'static str, Vec<u8>);
 
 fn get_definitions() -> HashMap<Opcode, Definition> {
     let mut defs = HashMap::new();
 
     defs.insert(
         Opcode::Constant,
-        Definition {
-            name: "OpConstant".to_string(),
-            operand_widths: vec![2],
-        },
+        ( "OpConstant", vec![2] ) 
     );
 
     defs.insert(
         Opcode::Add,
-        Definition {
-            name: "OpAdd".to_string(),
-            operand_widths: vec![],
-        },
+        ( "OpAdd", vec![] ) 
+
     );
     defs.insert(
         Opcode::Sub,
-        Definition {
-            name: "OpSub".to_string(),
-            operand_widths: vec![],
-        },
+        ("OpSub", vec![])
     );
     defs.insert(
         Opcode::Mul,
-        Definition {
-            name: "OpMul".to_string(),
-            operand_widths: vec![],
-        },
+        ("OpMul", vec![])
     );
     defs.insert(
         Opcode::Div,
-        Definition {
-            name: "OpDiv".to_string(),
-            operand_widths: vec![],
-        },
+        ("OpDiv", vec![])
     );
     defs.insert(
         Opcode::Mod,
-        Definition {
-            name: "OpMod".to_string(),
-            operand_widths: vec![],
-        },
+        ("OpMod", vec![])
     );
 
     defs.insert(
         Opcode::Pop,
-        Definition {
-            name: "OpPop".to_string(),
-            operand_widths: vec![],
-        },
+        ("OpPop", vec![])
+    );
+
+    defs.insert(
+        Opcode::True,
+        ("OpTrue", vec![])
+    );
+    defs.insert(
+        Opcode::False,
+        ("OpFalse", vec![])
+    );
+
+    defs.insert(
+        Opcode::Equal,
+        ("OpEqual", vec![])
+    );
+    defs.insert(
+        Opcode::NotEqual,
+        ("OpNotEqual", vec![])
+    );
+    defs.insert(
+        Opcode::Greater,
+        ("OpGreater", vec![])
+    );
+    defs.insert(
+        Opcode::GreaterEqual,
+        ("OpGreaterEqual", vec![])
     );
 
     defs
@@ -122,13 +133,16 @@ pub fn lookup(op: u8) -> Result<Definition, String> {
 pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
     let definitions = get_definitions();
 
+
     let def: Definition = match definitions.get(&op) {
         Some(def) => def.clone(),
         None => return Vec::new(),
     };
 
+    let ( _, operand_widths ) = def; 
+
     let mut instruction_len = 1;
-    for w in &def.operand_widths {
+    for w in &operand_widths {
         instruction_len += w;
     }
 
@@ -136,7 +150,7 @@ pub fn make(op: Opcode, operands: Vec<usize>) -> Instructions {
 
     instructions.put_u8(op as u8);
 
-    for (operand, width) in operands.iter().zip(def.operand_widths) {
+    for (operand, width) in operands.iter().zip(operand_widths) {
         match width {
             2 => instructions.put_u16(*operand as u16),
             _ => {}
@@ -167,20 +181,22 @@ pub fn pretty(ins: Instructions) -> String {
 }
 
 pub fn fmt_instruction(def: Definition, operands: Vec<isize>) -> String {
-    let count = def.operand_widths.len();
+    let ( name, operand_widths ) = def;
+    let count = operand_widths.len();
 
     match count {
-        0 => def.name,
-        1 => format!("{} {}", def.name, operands[0]),
-        _ => format!("ERROR: unhandled operandCount for {}\n", def.name),
+        0 => name.to_string(),
+        1 => format!("{} {}", name, operands[0]),
+        _ => format!("ERROR: unhandled operandCount for {}\n", name),
     }
 }
 
 pub fn read_operands(def: Definition, ins: Instructions) -> (Vec<isize>, usize) {
-    let mut operands = Vec::with_capacity(def.operand_widths.len());
+    let ( _, operand_widths ) = def;
+    let mut operands = Vec::with_capacity(operand_widths.len());
     let mut offset = 0;
 
-    for (index, width) in def.operand_widths.iter().enumerate() {
+    for (index, width) in operand_widths.iter().enumerate() {
         match width {
             2 => operands.push(read_u16(ins[offset..ins.len()].to_vec()) as isize),
             _ => {}
