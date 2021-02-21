@@ -75,6 +75,24 @@ fn test_arithmetic() {
                 code::make(Opcode::Pop, Vec::new()),
             ],
         },
+        TestCase {
+            input: "-1",
+            expected_constants: vec![Object::Number(1.0)],
+            expected_instructions: vec![
+                code::make(Opcode::Constant, vec![0]),
+                code::make(Opcode::Minus, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
+        TestCase {
+            input: "!true",
+            expected_constants: vec![],
+            expected_instructions: vec![
+                code::make(Opcode::True, vec![]),
+                code::make(Opcode::Bang, Vec::new()),
+                code::make(Opcode::Pop, Vec::new()),
+            ],
+        },
     ];
 
     run_tests(tests);

@@ -110,7 +110,17 @@ impl Compiler {
                 let op = if b { Opcode::True } else { Opcode::False };
                 self.emit(op, vec![]);
                 Ok(())
-            }
+            },
+            Expr::Prefix(op, expr) => {
+                self.compile_expr(*expr)?;
+
+                match op.as_str() {
+                    "!" => self.emit(Opcode::Bang, vec![]),
+                    "-" => self.emit(Opcode::Minus, vec![]),
+                    _ => return Err(format!("Unknown operator: {}", op))
+                };
+                Ok(())
+            },
             _ => Ok(()),
         }
     }

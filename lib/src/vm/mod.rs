@@ -61,6 +61,8 @@ impl VM {
                 Opcode::Add | Opcode::Sub | Opcode::Mul | Opcode::Div | Opcode::Mod | Opcode::Greater | Opcode::GreaterEqual => {
                     self.execute_binary_op(op)?;
                 },
+                Opcode::Minus => self.execute_minus_op()?,
+                Opcode::Bang => self.execute_bang_op()?,
                 Opcode::Equal | Opcode::NotEqual => {
                     self.execute_equality_op(op)?;
                 },
@@ -76,6 +78,30 @@ impl VM {
         }
 
         Ok(())
+    }
+
+    fn execute_bang_op(&mut self) -> Result<(), String> {
+        let operand = self.pop();
+
+        let opposite = match operand {
+            Object::Boolean(true) => Object::Boolean(false),
+            Object::Boolean(false) => Object::Boolean(true),
+            _ => Object::Boolean(false)
+        };
+
+        self.push(opposite)
+    }
+
+    fn execute_minus_op(&mut self) -> Result<(), String> {
+        let operand = self.pop();
+
+        let num = match operand {
+            Object::Number(num) => num,
+            num => return Err(format!("Can't negate type: {}", num))
+        };
+
+        let opposite = Object::Number(-num); 
+        self.push(opposite)
     }
 
     fn execute_equality_op(&mut self, op: Opcode) -> Result<(), String> {

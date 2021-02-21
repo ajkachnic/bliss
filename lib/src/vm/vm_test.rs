@@ -18,6 +18,8 @@ fn test_arithmetic() {
         ("1 + 2 / 2", Object::Number(2.0)),
         ("1 / 5", Object::Number(0.2)),
         ("2 - 5", Object::Number(-3.0)),
+        ("-5", Object::Number(-5.0)),
+        ("-100 + 50", Object::Number(-50.0)),
     ];
 
     run_tests(tests);
@@ -28,6 +30,10 @@ fn test_boolean() {
     let tests: Vec<TestCase> = vec![
         ("true", Object::Boolean(true)),
         ("false", Object::Boolean(false)),
+        ("1 > 2", Object::Boolean(false)),
+        ("1 * 5 < 5 * 5", Object::Boolean(true)),
+        ("!!!false", Object::Boolean(true)),
+        ("!true", Object::Boolean(false)),
     ];
 
     run_tests(tests);

@@ -22,7 +22,9 @@ pub enum Opcode {
     Equal,
     NotEqual,
     Greater,
-    GreaterEqual
+    GreaterEqual,
+    Minus,
+    Bang
 }
 
 impl FromPrimitive for Opcode {
@@ -45,6 +47,8 @@ impl FromPrimitive for Opcode {
             10 => Some(Opcode::NotEqual),
             11 => Some(Opcode::Greater),
             12 => Some(Opcode::GreaterEqual),
+            13 => Some(Opcode::Minus),
+            14 => Some(Opcode::Bang),
             _ => None,
         }
     }
@@ -112,6 +116,15 @@ fn get_definitions() -> HashMap<Opcode, Definition> {
     defs.insert(
         Opcode::GreaterEqual,
         ("OpGreaterEqual", vec![])
+    );
+
+    defs.insert(
+        Opcode::Minus,
+        ("OpMinus", vec![])
+    );
+    defs.insert(
+        Opcode::Bang,
+        ("OpBang", vec![])
     );
 
     defs
