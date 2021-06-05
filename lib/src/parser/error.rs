@@ -22,6 +22,7 @@ pub enum ParserType {
     Match,
     Array,
     Hash,
+    Pattern,
 }
 pub enum ParserError<'a> {
     ExpectedFound(&'a Token, &'a Token),

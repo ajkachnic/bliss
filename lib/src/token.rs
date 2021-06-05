@@ -1,12 +1,12 @@
 use std::fmt;
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Token {
     Illegal,
     EOF,
 
     Ident(String),  // foobar
-    Number(String), // Integer or float
+    Number(f64),    // Integer or float
     String(String), // "hello world"
     Symbol(String), // Self representing value, like :true
 
@@ -62,6 +62,7 @@ pub enum Token {
     If,
     Else,
     Then,
+    Let,
 }
 
 impl fmt::Display for Token {
@@ -139,6 +140,7 @@ pub fn lookup_keyword(name: &str) -> Token {
         "if" => Token::If,
         "then" => Token::Then,
         "else" => Token::Else,
+        "let" => Token::Let,
         _ => Token::Ident(name.to_string()),
     }
 }
