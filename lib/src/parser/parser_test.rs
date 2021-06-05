@@ -5,9 +5,9 @@ use crate::lexer::Lexer;
 #[test]
 fn test_assign_stmt() {
     let input = "
-	x = 5;
-	y = 10;
-	foobar = 838383;
+	let x = 5;
+	let y = 10;
+	let foobar = 838383;
 	";
     let expected = vec![
         Stmt::Assign(Ident::from("x").into(), Expr::Number(5.0)),

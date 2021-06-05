@@ -1,4 +1,3 @@
-use std::convert::TryInto;
 use std::fmt;
 #[derive(PartialEq, Clone, Debug, Eq, PartialOrd)]
 pub struct Ident(pub String);
