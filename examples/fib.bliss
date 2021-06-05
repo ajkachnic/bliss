@@ -1,12 +1,12 @@
-fib = fn n -> {
+let fib = fn n -> {
   if n < 2 {
     return n;
   } else {
-    return fib(n - 1) = fib(n - 2)
+    return fib(n - 1) + fib(n - 2)
   }
 }
 
-tail_fib = fn (n, a, b) -> {
+let tail_fib = fn (n, a, b) -> {
   if n == 0 {
     return a
   } else {
@@ -19,5 +19,4 @@ tail_fib = fn (n, a, b) -> {
   }
 }
 
-fib(3)
-tail_fib(3, 0, 1)
+log(tail_fib(3, 0, 1))

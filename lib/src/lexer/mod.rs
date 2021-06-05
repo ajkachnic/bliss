@@ -25,6 +25,16 @@ impl<'a> Lexer<'a> {
     fn peek(&mut self) -> Option<&(usize, char)> {
         self.input.peek()
     }
+
+    fn multipeek(&mut self, dist: usize) -> Option<(usize, char)> {
+        let mut clone = self.input.clone();
+        let mut ch = clone.next();
+        for _ in 1..dist {
+            ch = clone.next();
+        }
+        ch
+    }
+
     fn read(&mut self) -> Option<(usize, char)> {
         self.input.next()
     }
@@ -105,7 +115,10 @@ impl<'a> Lexer<'a> {
                     return token::lookup_keyword(ident.as_str());
                 } else if Self::is_digit(ch) {
                     let number = self.read_number(ch);
-                    return TokenType::Number(number);
+                    match number {
+                        Some(number) => return TokenType::Number(number),
+                        None => return TokenType::Illegal,
+                    }
                 }
                 TokenType::Illegal
             }
@@ -135,11 +148,22 @@ impl<'a> Lexer<'a> {
     fn is_digit(ch: char) -> bool {
         ch.is_ascii_digit()
     }
+    fn is_dot(ch: char) -> bool {
+        ch == '.'
+    }
 
     // Takes a function like &Self::is_letter
     fn peek_fn(&mut self, f: &IsFunc) -> bool {
         match self.peek() {
             Some(&(_, ch)) => f(ch),
+            None => false,
+        }
+    }
+
+    // Takes a function like &Self::is_letter
+    fn multipeek_fn(&mut self, dist: usize, f: &IsFunc) -> bool {
+        match self.multipeek(dist) {
+            Some(ch) => f(ch.1),
             None => false,
         }
     }
@@ -161,14 +185,28 @@ impl<'a> Lexer<'a> {
         Number(5), Period, Number(6)
       That unambiguously translates to Number(5.6) (i hope)
     */
-    fn read_number(&mut self, initial: char) -> String {
+    fn read_number(&mut self, initial: char) -> Option<f64> {
         let mut number = String::from(initial);
-        while self.peek_fn(&Self::is_digit) {
+        let mut dot = false;
+        while self.peek_fn(&Self::is_digit)
+        // Prevent reading the range operator
+            || (self.peek_fn(&Self::is_dot) && !self.multipeek_fn(2, &Self::is_dot))
+        {
             if let Some((_, ch)) = self.read() {
+                if ch == '.' {
+                    if !dot {
+                        dot = true;
+                    } else {
+                        return None;
+                    }
+                }
                 number.push(ch)
             }
         }
-        number
+        match number.parse() {
+            Ok(num) => Some(num),
+            Err(_) => None,
+        }
     }
     // TODO: Add support for escapes, like \"
     fn read_string(&mut self, initial: char) -> String {

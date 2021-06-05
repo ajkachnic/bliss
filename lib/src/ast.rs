@@ -20,10 +20,10 @@ impl fmt::Display for Ident {
 
 #[derive(Debug, PartialEq, PartialOrd, Clone)]
 pub enum Stmt {
-    Assign(Expr, Expr),
+    Assign(Pattern, Expr),
     Return(Expr),
     Expr(Expr),
-    Import { source: Expr, name: Expr },
+    Import { source: Expr, name: Pattern },
 }
 
 impl Into<BlockStatement> for Stmt {
@@ -47,6 +47,7 @@ impl fmt::Display for Stmt {
 pub enum Expr {
     Number(f64),
     Ident(Ident),
+    Pattern(Pattern),
     Prefix(String, Box<Expr>),
     Infix(Box<Expr>, String, Box<Expr>),
     Boolean(bool),
@@ -67,7 +68,7 @@ pub enum Expr {
     },
     Match {
         condition: Box<Expr>,
-        cases: Vec<(Expr, BlockStatement)>,
+        cases: Vec<(Pattern, BlockStatement)>,
     },
     // Array data structure
     Array(Vec<Expr>),
@@ -120,6 +121,7 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expr::Ident(ident) => write!(f, "{}", ident.0),
+            Expr::Pattern(pattern) => write!(f, "{}", pattern),
             Expr::Number(num) => write!(f, "{}", num),
             Expr::Prefix(op, expr) => write!(f, "({}{})", op, expr),
             Expr::Infix(left, operator, right) => write!(f, "({} {} {})", left, operator, right),
@@ -226,3 +228,50 @@ impl fmt::Display for BlockStatement {
     }
 }
 pub type Program = BlockStatement;
+
+#[derive(Debug, PartialEq, PartialOrd, Clone)]
+pub enum Pattern {
+    String(String),
+    Number(f64),
+    Boolean(bool),
+    Symbol(String),
+    Ident(Ident),
+    // Array destructuring
+    Array(Vec<Pattern>),
+    // Hashmap destructing
+    Hash(Vec<(Ident, Option<Ident>)>),
+    Nothing,
+}
+
+impl fmt::Display for Pattern {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Pattern::Ident(id) => id.fmt(f),
+            Pattern::Number(num) => num.fmt(f),
+            Pattern::Boolean(b) => b.fmt(f),
+            Pattern::Symbol(sym) => write!(f, ":{}", sym),
+            Pattern::String(str) => write!(f, "'{}'", str),
+            Pattern::Nothing => write!(f, "_"),
+            Pattern::Array(items) => {
+                let x: Vec<String> = items.iter().map(|item| format!("{}", item)).collect();
+                write!(f, "[ {} ]", x.join(","))
+            }
+            Pattern::Hash(items) => {
+                let x: Vec<String> = items
+                    .iter()
+                    .map(|(key, alias)| match alias {
+                        Some(alias) => format!("{}: {}", key, alias),
+                        None => format!("{}", key),
+                    })
+                    .collect();
+                write!(f, "{{ {} }}", x.join(","))
+            }
+        }
+    }
+}
+
+impl From<Ident> for Pattern {
+    fn from(ident: Ident) -> Pattern {
+        Pattern::Ident(ident)
+    }
+}

@@ -6,34 +6,37 @@ use std::rc::Rc;
 use super::{env::Environment, Evaluator};
 use crate::ast::{BlockStatement, Ident};
 
-pub type BuiltinFunc = fn(Vec<Object>, Rc<RefCell<Evaluator>>) -> Result<Object, String>;
+pub type BuiltinFunc<'a> =
+    fn(Vec<Object<'a>>, Rc<RefCell<Evaluator<'a>>>) -> Result<Object<'a>, String>;
 
 #[derive(Debug, Clone, PartialEq)]
-pub enum Object {
+pub enum Object<'a> {
     Number(f64),
     String(String),
+    Symbol(String),
     Ident(Ident),
     Boolean(bool),
-    Array(Vec<Object>),
-    Hash(HashMap<String, Object>),
-    Return(Box<Object>),
+    Array(Vec<Object<'a>>),
+    Hash(HashMap<String, Object<'a>>),
+    Return(Box<Object<'a>>),
     Function {
         parameters: Vec<Ident>,
         body: BlockStatement,
-        env: Rc<RefCell<Environment>>,
+        env: Rc<RefCell<Environment<'a>>>,
     },
-    Builtin(i32, BuiltinFunc),
+    Builtin(isize, BuiltinFunc<'a>),
     Void,
     Null,
 }
 
 // impl Eq for Object {}
 
-impl fmt::Display for Object {
+impl<'a> fmt::Display for Object<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Object::Number(value) => write!(f, "{}", value),
-            Object::String(value) => write!(f, "{}", value),
+            Object::String(value) => write!(f, "'{}'", value),
+            Object::Symbol(value) => write!(f, ":{}", value),
             Object::Ident(value) => write!(f, "{}", value),
             Object::Boolean(value) => write!(f, "{}", value),
             Object::Array(value) => {
@@ -41,7 +44,7 @@ impl fmt::Display for Object {
                 write!(f, "[{}]", items.join(", "))
             }
             Object::Return(_) => Ok(()),
-            Object::Void => Ok(()),
+            Object::Void => write!(f, "<void>"),
             Object::Null => write!(f, "null"),
             Object::Hash(map) => {
                 let items: Vec<String> = map
@@ -63,8 +66,8 @@ impl fmt::Display for Object {
     }
 }
 
-impl From<bool> for Object {
-    fn from(value: bool) -> Object {
+impl<'a> From<bool> for Object<'a> {
+    fn from(value: bool) -> Self {
         Object::Boolean(value)
     }
 }

@@ -37,7 +37,7 @@ impl fmt::Display for Position {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Clone,)]
 pub struct Token {
     pub tok: TokenType,
     pub offset: usize,
@@ -58,13 +58,13 @@ impl Token {
     }
 }
 
-#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Illegal,
     EOF,
 
     Ident(String),  // foobar
-    Number(String), // Integer or float
+    Number(f64),    // Integer or float
     String(String), // "hello world"
     Symbol(String), // Self representing value, like :true
 
@@ -120,6 +120,7 @@ pub enum TokenType {
     If,
     Else,
     Then,
+    Let,
 }
 
 impl fmt::Display for TokenType {
@@ -197,6 +198,7 @@ pub fn lookup_keyword(name: &str) -> TokenType {
         "if" => TokenType::If,
         "then" => TokenType::Then,
         "else" => TokenType::Else,
+        "let" => TokenType::Let,
         _ => TokenType::Ident(name.to_string()),
     }
 }

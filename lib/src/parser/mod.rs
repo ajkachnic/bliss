@@ -1,8 +1,7 @@
-use ast::{BlockStatement, Expr, Ident, Program, Stmt};
+use ast::{BlockStatement, Expr, Ident, Pattern, Program, Stmt};
 use error::{
     generate_parser_message, generate_pretty_error, ParserError, ParserResult, ParserType,
 };
-
 use crate::lexer::Lexer;
 use crate::token::{Token, TokenType};
 use crate::{ast, token::Position};
@@ -92,42 +91,87 @@ impl<'a> Parser<'a> {
         }
         Ok(stmts)
     }
-    fn parse_stmt(&mut self) -> ParserResult<Stmt> {
-        match self.current_token.clone().tok {
-            TokenType::Ident(_) => {
-                if self.peek_token_is(&TokenType::Assign) {
-                    let name = self.parse_expression(Precedence::Lowest)?;
-                    return self.parse_assign_stmt(name);
+
+    fn parse_pattern(&mut self) -> ParserResult<Pattern> {
+        let pattern = match self.current_token.clone().tok {
+            TokenType::Ident(id) => {
+                if id.as_str() == "_" {
+                    Pattern::Nothing
+                } else {
+                    Pattern::Ident(Ident(id))
                 }
-                self.parse_expression_stmt()
+            }
+            TokenType::Symbol(sym) => Pattern::Symbol(sym),
+            TokenType::String(str) => Pattern::String(str),
+            TokenType::True => Pattern::Boolean(true),
+            TokenType::False => Pattern::Boolean(false),
+            TokenType::Number(num) => Pattern::Number(num),
+            TokenType::LeftBracket => {
+                let mut items = vec![];
+                if self.peek_token_is(&TokenType::RightBracket) {
+                    self.next_token();
+                    self.next_token();
+                    Pattern::Array(items)
+                } else {
+                    self.next_token();
+                    let value = self.parse_pattern()?;
+                    items.push(value);
+
+                    while self.peek_token_is(&TokenType::Comma) {
+                        self.next_token();
+                        self.next_token();
+                        let value = self.parse_pattern()?;
+                        items.push(value);
+                    }
+
+                    // Read past the RightBracket
+                    self.expect_peek(&TokenType::RightBracket, ParserType::Pattern)?;
+
+                    Pattern::Array(items)
+                }
             }
             TokenType::LeftBrace => {
-                let name = self.parse_expression(Precedence::Lowest)?;
-                if self.peek_token_is(&TokenType::Assign) {
-                    return self.parse_assign_stmt(name);
+                let mut items = vec![];
+                if self.peek_token_is(&TokenType::RightBrace) {
+                    self.next_token();
+                    self.next_token();
+                    Pattern::Hash(items)
+                } else {
+                    self.next_token();
+                    let value = self.parse_identifier()?;
+                    items.push((value, None));
+
+                    while self.peek_token_is(&TokenType::Comma) {
+                        self.next_token();
+                        self.next_token();
+                        let value = self.parse_identifier()?;
+                        items.push((value, None));
+                    }
+
+                    // Read past the RightBracket
+                    self.expect_peek(&TokenType::RightBrace, ParserType::Pattern)?;
+
+                    Pattern::Hash(items)
                 }
-                if self.peek_token_is(&TokenType::Semicolon) {
-                    self.next_token()
-                }
-                Ok(Stmt::Expr(name))
             }
-            TokenType::LeftBracket => {
-                let name = self.parse_expression(Precedence::Lowest)?;
-                if self.peek_token_is(&TokenType::Assign) {
-                    return self.parse_assign_stmt(name);
-                }
-                if self.peek_token_is(&TokenType::Semicolon) {
-                    self.next_token()
-                }
-                Ok(Stmt::Expr(name))
-            }
+            _ => return Err(String::new()),
+        };
+
+        Ok(pattern)
+    }
+
+    fn parse_stmt(&mut self) -> ParserResult<Stmt> {
+        match self.current_token.clone().tok {
+            TokenType::Let => self.parse_assign_stmt(),
             TokenType::Return => self.parse_return_stmt(),
             TokenType::Import => self.parse_import_stmt(),
             _ => self.parse_expression_stmt(),
         }
     }
 
-    fn parse_assign_stmt(&mut self, name: Expr) -> ParserResult<Stmt> {
+    fn parse_assign_stmt(&mut self) -> ParserResult<Stmt> {
+        self.next_token();
+        let name = self.parse_pattern()?;
         // Should be an equals sign
         self.expect_peek(&TokenType::Assign, ParserType::Assign)?;
 
@@ -148,7 +192,7 @@ impl<'a> Parser<'a> {
     }
     fn parse_import_stmt(&mut self) -> ParserResult<Stmt> {
         self.next_token();
-        let name = self.parse_expression(Precedence::Lowest)?;
+        let name = self.parse_pattern()?;
         self.expect_peek(&TokenType::From, ParserType::Import)?;
         self.next_token();
         let source = self.parse_expression(Precedence::Lowest)?;
@@ -168,7 +212,7 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self, precedence: Precedence) -> ParserResult<Expr> {
         let token = self.current_token.clone();
         let mut left = match token.tok {
-            TokenType::Ident(_) => self.parse_identifier(),
+            TokenType::Ident(_) => self.parse_identifier().map(Expr::Ident),
             TokenType::String(_) => self.parse_string(),
             TokenType::Symbol(_) => self.parse_symbol(),
             TokenType::Number(_) => self.parse_number(),
@@ -211,37 +255,22 @@ impl<'a> Parser<'a> {
                     self.next_token();
                     self.parse_match(left.clone()?)
                 }
-                _ => return Ok(left?),
+                _ => return left,
             };
         }
-        Ok(left?)
+        left
     }
 
-    fn parse_identifier(&mut self) -> ParserResult<Expr> {
+    fn parse_identifier(&mut self) -> ParserResult<Ident> {
         if let TokenType::Ident(ident) = self.current_token.clone().tok {
-            return Ok(Expr::Ident(Ident(ident)));
+            return Ok(Ident(ident));
         }
         // This should never happen
         Err(String::new())
     }
     fn parse_number(&mut self) -> ParserResult<Expr> {
-        // TODO: Find a better way to do this without disturbing the range operator (..)
-        // Really really cursed code to generate floats
         if let TokenType::Number(num) = self.current_token.clone().tok {
-            let mut value = String::from(&num);
-            if self.peek_token_is(&TokenType::Period) {
-                self.next_token();
-                if let TokenType::Number(num) = self.peek_token.clone().tok {
-                    self.next_token();
-                    value.push('.');
-                    value.push_str(&num);
-                }
-            }
-            let parsed = value.parse();
-            if let Ok(num) = parsed {
-                return Ok(Expr::Number(num));
-            }
-            return Err(format!("Failed to parse number {} as a float", &num));
+            return Ok(Expr::Number(num));
         }
         // This should never happen
         Err("Expected number token".to_string())
@@ -438,14 +467,14 @@ impl<'a> Parser<'a> {
             cases,
         })
     }
-    fn parse_match_cases(&mut self) -> ParserResult<Vec<(Expr, BlockStatement)>> {
+    fn parse_match_cases(&mut self) -> ParserResult<Vec<(Pattern, BlockStatement)>> {
         let mut cases = vec![];
 
         if self.peek_token_is(&TokenType::RightBrace) {
             return Ok(cases);
         }
         self.next_token();
-        let key = self.parse_expression(Precedence::Lowest)?;
+        let key = self.parse_pattern()?;
         self.expect_peek(&TokenType::Arrow, ParserType::Match)?;
         self.next_token();
         let value = self.parse_block_shorthand()?;
@@ -455,7 +484,7 @@ impl<'a> Parser<'a> {
         while self.peek_token_is(&TokenType::Comma) {
             self.next_token();
             self.next_token();
-            let key = self.parse_expression(Precedence::Lowest)?;
+            let key = self.parse_pattern()?;
             self.expect_peek(&TokenType::Arrow, ParserType::Match)?;
             self.next_token();
             let value = self.parse_block_shorthand()?;

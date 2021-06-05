@@ -4,7 +4,7 @@ use std::cell::RefCell;
 
 use super::{object::Object, EvalResult, Evaluator};
 
-pub fn get_builtins() -> HashMap<String, Object> {
+pub fn get_builtins<'a>() -> HashMap<String, Object<'a>> {
     let mut builtins = HashMap::new();
 
     // Array functions
@@ -21,7 +21,7 @@ pub fn get_builtins() -> HashMap<String, Object> {
     builtins
 }
 
-fn len(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn len<'a>(args: Vec<Object<'a>>, _: Rc<RefCell<Evaluator>>) -> EvalResult<'a> {
     let arg = args[0].clone();
     let len = match arg {
         Object::Array(arr) => arr.len(),
@@ -37,27 +37,27 @@ fn len(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
     Ok(Object::Number(len as f64))
 }
 
-fn log(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn log<'a>(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult<'a> {
     for arg in args {
         println!("{}", arg);
     }
     Ok(Object::Void)
 }
 
-fn init(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn init<'a>(args: Vec<Object<'a>>, _: Rc<RefCell<Evaluator>>) -> EvalResult<'a> {
     if let Object::Array(array) = args[0].clone() {
         return Ok(Object::Array(array[0..array.len() - 1].to_vec()));
     };
     Err(format!("{} isn't an array", args[0]))
 }
-fn tail(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn tail<'a>(args: Vec<Object<'a>>, _: Rc<RefCell<Evaluator>>) -> EvalResult<'a> {
     if let Object::Array(array) = args[0].clone() {
         return Ok(Object::Array(array[1..array.len()].to_vec()));
     };
     Err(format!("{} isn't an array", args[0]))
 }
 
-fn head(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn head<'a>(args: Vec<Object<'a>>, _: Rc<RefCell<Evaluator>>) -> EvalResult<'a> {
     if let Object::Array(array) = args[0].clone() {
         return match array.first() {
             Some(val) => Ok(val.clone()),
@@ -67,7 +67,7 @@ fn head(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
     Err(format!("{} isn't an array", args[0]))
 }
 
-fn last(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn last<'a>(args: Vec<Object<'a>>, _: Rc<RefCell<Evaluator>>) -> EvalResult<'a> {
     if let Object::Array(array) = args[0].clone() {
         return match array.last() {
             Some(val) => Ok(val.clone()),
@@ -77,7 +77,7 @@ fn last(args: Vec<Object>, _: Rc<RefCell<Evaluator>>) -> EvalResult {
     Err(format!("{} isn't an array", args[0]))
 }
 
-fn map(args: Vec<Object>, eval: Rc<RefCell<Evaluator>>) -> EvalResult {
+fn map<'a>(args: Vec<Object<'a>>, eval: Rc<RefCell<Evaluator<'a>>>) -> EvalResult<'a> {
     if let Object::Array(array) = args[0].clone() {
         match args[1].clone() {
             Object::Function {

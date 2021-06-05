@@ -38,9 +38,9 @@ fn test_two_chars() {
         TokenType::LessEq,
         TokenType::Ident(String::from("e")),
         TokenType::Match,
-        TokenType::Number(String::from("0")),
+        TokenType::Number(0.0),
         TokenType::Range,
-        TokenType::Number(String::from("5")),
+        TokenType::Number(5.0),
         TokenType::Arrow,
     ];
     test_tokens(input, tests);
@@ -84,15 +84,22 @@ fn test_keywords() {
 
 #[test]
 fn test_numbers() {
-    let input = "5 + 4 * 8000";
+    let input = "5 + 4.5 * 8000";
     let tests = vec![
-        TokenType::Number(String::from("5")),
+        TokenType::Number(5.0),
         TokenType::Plus,
-        TokenType::Number(String::from("4")),
+        TokenType::Number(4.5),
         TokenType::Asterisk,
-        TokenType::Number(String::from("8000")),
+        TokenType::Number(8000.0)
     ];
     test_tokens(input, tests);
+}
+
+#[test]
+fn test_float_lookahead() {
+    let input = "1..3";
+    let tests = vec![TokenType::Number(1.0), TokenType::Range, TokenType::Number(3.0)];
+    test_tokens(input, tests)
 }
 
 #[test]

@@ -7,7 +7,7 @@ use std::rc::Rc;
 use lib::evaluation;
 use lib::lexer::Lexer;
 use lib::parser::Parser;
-use lib::semantics;
+// use lib::semantics;
 use lib::style;
 use path::Path;
 
@@ -26,14 +26,17 @@ pub fn exec_file(path: &Path) -> std::io::Result<()> {
             return Ok(());
         }
     };
-    let mut context = semantics::context::Context {
-        ..Default::default()
-    };
-    let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(&mut context));
-    if let Err(errors) = analysis {
-        handle_analysis_errors(errors);
-        return Ok(());
-    }
+    // let mut context = semantics::context::Context {
+    //     ..Default::default()
+    // };
+    // let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(&mut context));
+    // match analysis {
+    //     Err(errors) => {
+    //         handle_analysis_errors(errors);
+    //         return Ok(());
+    //     }
+    //     _ => {}
+    // }
 
     let env = evaluation::env::Environment::new();
 

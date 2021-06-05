@@ -5,9 +5,9 @@ use crate::lexer::Lexer;
 #[test]
 fn test_assign_stmt() {
     let input = "
-	x = 5;
-	y = 10;
-	foobar = 838383;
+	let x = 5;
+	let y = 10;
+	let foobar = 838383;
 	";
     let expected = vec![
         Stmt::Assign(Ident::from("x").into(), Expr::Number(5.0)),
@@ -181,13 +181,10 @@ fn test_array_expression() {
 fn test_hash_expression() {
     let input = "{ name = 'bob', age = 15, height, status = :online }";
     let expected = Expr::Hash(vec![
-        (Ident::from("name").into(), Expr::from("bob")),
-        (Ident::from("age").into(), Expr::from(15.0)),
-        (Ident::from("height").into(), Ident::from("height").into()),
-        (
-            Ident::from("status").into(),
-            Expr::Symbol("online".to_string()),
-        ),
+        (Ident::from("name"), Expr::from("bob")),
+        (Ident::from("age"), Expr::from(15.0)),
+        (Ident::from("height"), Ident::from("height").into()),
+        (Ident::from("status"), Expr::Symbol("online".to_string())),
     ])
     .into();
     test_output(input, expected)
@@ -209,6 +206,35 @@ fn test_call_expression() {
 }
 
 #[test]
+fn test_pattern() {
+    let input = "[ 4.5, foo, true, :bar, 'hello', { abc, def }, _ ]";
+    let expected = Pattern::Array(vec![
+        Pattern::Number(4.5),
+        Pattern::Ident(Ident::from("foo")),
+        Pattern::Boolean(true),
+        Pattern::Symbol("bar".to_string()),
+        Pattern::String("hello".to_string()),
+        Pattern::Hash(vec![(Ident::from("abc"), None), (Ident::from("def"), None)]),
+        Pattern::Nothing,
+    ]);
+
+    // Specialized check
+    fn test_output(input: &str, expected: Pattern) {
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l, input.to_string());
+        let pattern = p.parse_pattern();
+        if let Ok(pattern) = pattern {
+            assert_eq!(pattern, expected)
+        } else if let Err(err) = pattern {
+            println!("Parser had an error:\n{}", err);
+            assert!(false);
+        }
+    }
+
+    test_output(input, expected)
+}
+
+#[test]
 fn test_match_expression() {
     let input = "true :: {
         true -> 1 + 1,
@@ -218,20 +244,20 @@ fn test_match_expression() {
         condition: Expr::from(true).into(),
         cases: vec![
             (
-                Expr::from(true),
+                Pattern::Boolean(true),
                 Expr::Infix(
-                    Box::new(Expr::from(1.0).into()),
+                    Box::new(Expr::from(1.0)),
                     String::from("+"),
-                    Box::new(Expr::from(1.0).into()),
+                    Box::new(Expr::from(1.0)),
                 )
                 .into(),
             ),
             (
-                Expr::from(false),
+                Pattern::Boolean(false),
                 Expr::Infix(
-                    Box::new(Expr::from(2.0).into()),
+                    Box::new(Expr::from(2.0)),
                     String::from("+"),
-                    Box::new(Expr::from(2.0).into()),
+                    Box::new(Expr::from(2.0)),
                 )
                 .into(),
             ),

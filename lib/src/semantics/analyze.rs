@@ -1,5 +1,5 @@
 use super::{context::Context, util};
-use crate::ast::{Expr, Program, Stmt};
+use crate::ast::{Expr, Program, Stmt, Pattern};
 use crate::style::{bold, yellow};
 use std::default::Default;
 
@@ -33,9 +33,9 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
         Stmt::Expr(expr) => analyze_expr(expr, context),
         Stmt::Assign(name, expr) => {
             let mut errors = vec![];
-            if let Expr::Array(array) = name {
+            if let Pattern::Array(array) = name {
                 for item in array {
-                    if let Expr::Ident(item) = item {
+                    if let Pattern::Ident(item) = item {
                         context.add(item.0, expr.clone());
                     } else {
                         errors.push(
@@ -43,9 +43,9 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
                         )
                     }
                 }
-            } else if let Expr::Hash(hash) = name {
+            } else if let Pattern::Hash(hash) = name {
                 for (_key, value) in hash {
-                    if let Expr::Ident(value) = value {
+                    if let Pattern::Ident(value) = value {
                         context.add(value.0, expr.clone());
                     } else {
                         errors.push(
@@ -53,7 +53,7 @@ pub fn analyze_stmt(stmt: Stmt, context: &mut Context) -> AnalysisResult {
                         )
                     }
                 }
-            } else if let Expr::Ident(ident) = name {
+            } else if let Pattern::Ident(ident) = name {
                 context.add(ident.0, expr.clone());
             }
             let res = analyze_expr(expr, context);
