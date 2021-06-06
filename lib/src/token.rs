@@ -37,7 +37,7 @@ impl fmt::Display for Position {
     }
 }
 
-#[derive(Debug, PartialEq, Clone,)]
+#[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub tok: TokenType,
     pub offset: usize,

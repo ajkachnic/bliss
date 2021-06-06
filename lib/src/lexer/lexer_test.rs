@@ -90,7 +90,7 @@ fn test_numbers() {
         TokenType::Plus,
         TokenType::Number(4.5),
         TokenType::Asterisk,
-        TokenType::Number(8000.0)
+        TokenType::Number(8000.0),
     ];
     test_tokens(input, tests);
 }
@@ -98,7 +98,11 @@ fn test_numbers() {
 #[test]
 fn test_float_lookahead() {
     let input = "1..3";
-    let tests = vec![TokenType::Number(1.0), TokenType::Range, TokenType::Number(3.0)];
+    let tests = vec![
+        TokenType::Number(1.0),
+        TokenType::Range,
+        TokenType::Number(3.0),
+    ];
     test_tokens(input, tests)
 }
 
