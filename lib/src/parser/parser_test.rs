@@ -191,6 +191,18 @@ fn test_hash_expression() {
 }
 
 #[test]
+fn test_nested() {
+    let cases = vec![
+        ("[[]]", Expr::Array(vec![Expr::Array(vec![])]).into()),
+        (
+            "{ a = {} }",
+            Expr::Hash(vec![(Ident::from("a"), Expr::Hash(vec![]))]).into(),
+        ),
+    ];
+    test_multiple(cases)
+}
+
+#[test]
 fn test_call_expression() {
     let input = "foobar(a, b, c)";
     let expected = Expr::Call {
@@ -276,6 +288,12 @@ fn test_output(input: &str, expected: Vec<Stmt>) {
     } else if let Err(err) = program {
         println!("Parser had an error:\n{}", err);
         assert!(false);
+    }
+}
+
+fn test_multiple(cases: Vec<(&str, Vec<Stmt>)>) {
+    for (input, expected) in cases {
+        test_output(input, expected)
     }
 }
 

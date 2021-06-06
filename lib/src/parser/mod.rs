@@ -1,10 +1,10 @@
+use crate::lexer::Lexer;
+use crate::token::{Token, TokenType};
+use crate::{ast, token::Position};
 use ast::{BlockStatement, Expr, Ident, Pattern, Program, Stmt};
 use error::{
     generate_parser_message, generate_pretty_error, ParserError, ParserResult, ParserType,
 };
-use crate::lexer::Lexer;
-use crate::token::{Token, TokenType};
-use crate::{ast, token::Position};
 
 mod error;
 
@@ -498,7 +498,6 @@ impl<'a> Parser<'a> {
         let mut items = vec![];
         if self.peek_token_is(&TokenType::RightBracket) {
             self.next_token();
-            self.next_token();
             return Ok(Expr::Array(items));
         }
 
@@ -521,7 +520,6 @@ impl<'a> Parser<'a> {
     fn parse_hash(&mut self) -> ParserResult<Expr> {
         let mut items = vec![];
         if self.peek_token_is(&TokenType::RightBrace) {
-            self.next_token();
             self.next_token();
             return Ok(Expr::Hash(items));
         }
