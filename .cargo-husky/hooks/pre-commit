@@ -1,0 +1,8 @@
+set -e
+
+echo '+cargo test -p lib --lib'
+cargo test -p lib --lib
+echo '+cargo clippy -- -D warnings'
+cargo clippy -- -A clippy::unnecessary_wraps -D warnings
+echo '+cargo fmt -- --check'
+cargo fmt -- --check
