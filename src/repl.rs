@@ -8,15 +8,10 @@ use std::rc::Rc;
 use lib::evaluation;
 use lib::lexer;
 use lib::parser::Parser;
-// use lib::semantics;
 use lib::style;
-// use semantics::context::Context;
 
 pub fn start() {
     let mut rl = Editor::<()>::new();
-    // let mut context = Context {
-    //     ..Default::default()
-    // };
     let env = evaluation::env::Environment::new();
     let mut evaluator = evaluation::Evaluator::new(Rc::new(RefCell::new(env)));
     loop {

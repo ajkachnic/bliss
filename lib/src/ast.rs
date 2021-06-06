@@ -2,9 +2,9 @@ use std::fmt;
 #[derive(PartialEq, Clone, Debug, Eq, PartialOrd)]
 pub struct Ident(pub String);
 // Trait implementations for Ident
-impl Into<Expr> for Ident {
-    fn into(self) -> Expr {
-        Expr::Ident(self)
+impl From<Ident> for Expr {
+    fn from(val: Ident) -> Self {
+        Expr::Ident(val)
     }
 }
 impl From<&str> for Ident {
@@ -26,9 +26,9 @@ pub enum Stmt {
     Import { source: Expr, name: Pattern },
 }
 
-impl Into<BlockStatement> for Stmt {
-    fn into(self) -> BlockStatement {
-        BlockStatement(vec![self])
+impl From<Stmt> for BlockStatement {
+    fn from(val: Stmt) -> Self {
+        BlockStatement(vec![val])
     }
 }
 
@@ -77,20 +77,20 @@ pub enum Expr {
     Hash(Vec<(Ident, Expr)>),
 }
 
-impl Into<Stmt> for Expr {
-    fn into(self) -> Stmt {
-        Stmt::Expr(self)
+impl From<Expr> for Stmt {
+    fn from(val: Expr) -> Self {
+        Stmt::Expr(val)
     }
 }
 
-impl Into<Vec<Stmt>> for Expr {
-    fn into(self) -> Vec<Stmt> {
-        vec![self.into()]
+impl From<Expr> for Vec<Stmt> {
+    fn from(val: Expr) -> Self {
+        vec![val.into()]
     }
 }
-impl Into<BlockStatement> for Expr {
-    fn into(self) -> BlockStatement {
-        BlockStatement(self.into())
+impl From<Expr> for BlockStatement {
+    fn from(val: Expr) -> Self {
+        BlockStatement(val.into())
     }
 }
 
