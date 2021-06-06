@@ -11,8 +11,8 @@ use lib::parser::Parser;
 use lib::style;
 use path::Path;
 
-// Executes a file
-// The file should already be stat-ed to ensure we can access it
+/// Executes a file
+/// The file should already be stat-ed to ensure we can access it
 pub fn exec_file(path: &Path) -> std::io::Result<()> {
     let file = fs::read_to_string(path)?;
 
@@ -26,17 +26,6 @@ pub fn exec_file(path: &Path) -> std::io::Result<()> {
             return Ok(());
         }
     };
-    // let mut context = semantics::context::Context {
-    //     ..Default::default()
-    // };
-    // let analysis = semantics::analyze::analyze_stmts(program.clone(), Some(&mut context));
-    // match analysis {
-    //     Err(errors) => {
-    //         handle_analysis_errors(errors);
-    //         return Ok(());
-    //     }
-    //     _ => {}
-    // }
 
     let env = evaluation::env::Environment::new();
 
@@ -59,14 +48,4 @@ fn handle_parser_error(error: String) {
         style::bold("Parsing Errors:")
     );
     eprintln!("{}", error);
-}
-
-fn handle_analysis_errors(errors: Vec<String>) {
-    eprintln!(
-        "{}\nSorry to disturb you, but we had some trouble while analyzing your code for validity",
-        style::bold("Semantic Analysis Errors:")
-    );
-    for error in errors {
-        eprintln!("{}\n", error);
-    }
 }
