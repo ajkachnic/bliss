@@ -218,6 +218,30 @@ fn test_call_expression() {
 }
 
 #[test]
+fn test_index_expression() {
+    let input = "1..5[2] == { a = 3 }.a";
+    let expected = Expr::Infix(
+        Box::new(Expr::Member {
+            property: Box::new(Expr::Number(2.0)),
+            object: Box::new(Expr::Infix(
+                Box::new(Expr::Number(1.0)),
+                String::from(".."),
+                Box::new(Expr::Number(5.0)),
+            )),
+            computed: true,
+        }),
+        "==".to_string(),
+        Box::new(Expr::Member {
+            property: Expr::Ident(Ident::from("a")).into(),
+            object: Expr::Hash(vec![(Ident::from("a"), Expr::Number(3.0))]).into(),
+            computed: false,
+        }),
+    )
+    .into();
+    test_output(input, expected)
+}
+
+#[test]
 fn test_pattern() {
     let input = "[ 4.5, foo, true, :bar, 'hello', { abc, def }, _ ]";
     let expected = Pattern::Array(vec![

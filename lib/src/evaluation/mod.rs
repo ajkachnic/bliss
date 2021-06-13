@@ -126,6 +126,11 @@ impl<'a> Evaluator<'a> {
                 function,
                 arguments,
             } => self.eval_call_expression(*function, arguments),
+            Expr::Member {
+                property,
+                object,
+                computed,
+            } => self.eval_member_expression(*property, *object, computed),
             Expr::Function { parameters, body } => Ok(Object::Function {
                 parameters,
                 body,
@@ -223,6 +228,44 @@ impl<'a> Evaluator<'a> {
 
         self.env = env;
         Ok(res)
+    }
+
+    fn eval_member_expression(
+        &mut self,
+        property: Expr,
+        object: Expr,
+        computed: bool,
+    ) -> EvalResult<'a> {
+        let object = self.eval_expr(object)?;
+        let property = if computed {
+            self.eval_expr(property)?
+        } else {
+            match property {
+                Expr::Ident(ident) => Object::Ident(ident),
+                _ => unreachable!(),
+            }
+        };
+
+        self.eval_member_components(property, object, computed)
+    }
+    fn eval_member_components(
+        &mut self,
+        property: Object<'a>,
+        object: Object<'a>,
+        computed: bool,
+    ) -> EvalResult<'a> {
+        Ok(match (property, object) {
+            (Object::Number(n), Object::Array(arr)) => arr.get(n as usize).unwrap().clone(),
+            (Object::String(str), Object::Hash(hash)) => hash.get(&str).unwrap().clone(),
+            (Object::Ident(property), object) => {
+                let index = match computed {
+                    true => self.env.borrow().get(property.to_string()).unwrap(),
+                    false => Object::String(property.to_string()),
+                };
+                return self.eval_member_components(index, object, computed);
+            }
+            (index, of) => return Err(format!("Incompatible types, {} and {}", index, of)),
+        })
     }
 
     fn eval_match_expression(
