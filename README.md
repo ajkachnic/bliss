@@ -10,7 +10,7 @@ The source code is kind of all over the place so expect a refactor *coming soon 
 
 ## Goals of this project
 
-- [ ] Have error good and clear parser errors that point you in the right direction
+- [x] Have error good and clear parser errors that point you in the right direction (kinda there)
 - [ ] Have a powerful standard library, that makes it practical
 - [ ] Have decent performance and garbage collection
 
@@ -27,13 +27,9 @@ The source code is kind of all over the place so expect a refactor *coming soon 
 - [ ] For some reason non-tail recursion doesn't work. See [this example](examples/fib.bliss)
   - [ ] Recursion in general is kinda broken tbh
 - [ ] There is no garbage collection so the stack will overflow if you do too much recursion
-- [ ] Support for logical operators in match cases isn't implemented `0 || 1 -> {}`
-- [ ] Pattern matching isn't fully supported across the language (yet)
-- [ ] The lexer doesn't output positional data, making debugging really annoying
-- [ ] The parser can only output one error at a time (consequences of using `Result<T, String>`)
+- [ ] The parser can only output one error at a time
 
-I plan to fix these in the coming days, so don't worry to much
-
+I plan to fix these eventually, so don't worry to much
 
 ## Directory Structure
 
