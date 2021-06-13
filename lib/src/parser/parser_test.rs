@@ -239,7 +239,7 @@ fn test_pattern() {
             assert_eq!(pattern, expected)
         } else if let Err(err) = pattern {
             println!("Parser had an error:\n{}", err);
-            assert!(false);
+            panic!("Parser errored");
         }
     }
 
@@ -287,7 +287,7 @@ fn test_output(input: &str, expected: Vec<Stmt>) {
         check_program(program, expected);
     } else if let Err(err) = program {
         println!("Parser had an error:\n{}", err);
-        assert!(false);
+        panic!("Parser errored");
     }
 }
 

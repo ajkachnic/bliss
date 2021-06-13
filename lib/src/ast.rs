@@ -47,7 +47,6 @@ impl fmt::Display for Stmt {
 pub enum Expr {
     Number(f64),
     Ident(Ident),
-    Pattern(Pattern),
     Prefix(String, Box<Expr>),
     Infix(Box<Expr>, String, Box<Expr>),
     Boolean(bool),
@@ -121,7 +120,6 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expr::Ident(ident) => write!(f, "{}", ident.0),
-            Expr::Pattern(pattern) => write!(f, "{}", pattern),
             Expr::Number(num) => write!(f, "{}", num),
             Expr::Prefix(op, expr) => write!(f, "({}{})", op, expr),
             Expr::Infix(left, operator, right) => write!(f, "({} {} {})", left, operator, right),

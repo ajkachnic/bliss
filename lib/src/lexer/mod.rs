@@ -1,4 +1,4 @@
-use std::iter::{Enumerate, Peekable};
+use std::iter::Peekable;
 use std::str::Chars;
 
 use crate::token;
@@ -12,21 +12,23 @@ type IsFunc = dyn Fn(char) -> bool;
 
 // TODO: Add positions
 pub struct Lexer<'a> {
-    input: Peekable<Enumerate<Chars<'a>>>,
+    input: Peekable<Chars<'a>>,
+    offset: usize,
 }
 
 impl<'a> Lexer<'a> {
     pub fn new(input: &str) -> Lexer {
         Lexer {
-            input: input.chars().enumerate().peekable(),
+            input: input.chars().peekable(),
+            offset: 0,
         }
     }
 
-    fn peek(&mut self) -> Option<&(usize, char)> {
+    fn peek(&mut self) -> Option<&char> {
         self.input.peek()
     }
 
-    fn multipeek(&mut self, dist: usize) -> Option<(usize, char)> {
+    fn multipeek(&mut self, dist: usize) -> Option<char> {
         let mut clone = self.input.clone();
         let mut ch = clone.next();
         for _ in 1..dist {
@@ -35,14 +37,15 @@ impl<'a> Lexer<'a> {
         ch
     }
 
-    fn read(&mut self) -> Option<(usize, char)> {
+    fn read(&mut self) -> Option<char> {
+        self.offset += 1;
         self.input.next()
     }
 
     fn peek_is(&mut self, expected: char) -> bool {
         let peek = self.peek();
         match peek {
-            Some(&(_, ch)) => ch == expected,
+            Some(&ch) => ch == expected,
             None => false,
         }
     }
@@ -86,7 +89,7 @@ impl<'a> Lexer<'a> {
             ',' => TokenType::Comma,
             ';' => TokenType::Semicolon,
             ':' => {
-                if let Some(&(_, next)) = self.peek() {
+                if let Some(&next) = self.peek() {
                     if Self::is_letter(next) {
                         self.read();
                         let text = self.read_identifier(next);
@@ -127,14 +130,19 @@ impl<'a> Lexer<'a> {
 
     pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
-        if let Some((offset, ch)) = self.read() {
+        if let Some(ch) = self.read() {
+            let start = self.offset;
             // Light abstraction to make this less ugly
             let tok = self.generate_token(ch);
-            return Token { tok, offset };
+            let end = self.offset;
+            return Token {
+                tok,
+                position: start..end,
+            };
         }
         Token {
-            tok: TokenType::EOF,
-            offset: 0,
+            tok: TokenType::Eof,
+            position: 0..0,
         }
     }
 
@@ -155,7 +163,7 @@ impl<'a> Lexer<'a> {
     // Takes a function like &Self::is_letter
     fn peek_fn(&mut self, f: &IsFunc) -> bool {
         match self.peek() {
-            Some(&(_, ch)) => f(ch),
+            Some(&ch) => f(ch),
             None => false,
         }
     }
@@ -163,7 +171,7 @@ impl<'a> Lexer<'a> {
     // Takes a function like &Self::is_letter
     fn multipeek_fn(&mut self, dist: usize, f: &IsFunc) -> bool {
         match self.multipeek(dist) {
-            Some(ch) => f(ch.1),
+            Some(ch) => f(ch),
             None => false,
         }
     }
@@ -173,7 +181,7 @@ impl<'a> Lexer<'a> {
         // Allows letters and digits
         // This works because the initial character can only be a letter
         while self.peek_fn(&Self::is_letter) || self.peek_fn(&Self::is_digit) {
-            if let Some((_, ch)) = self.read() {
+            if let Some(ch) = self.read() {
                 ident.push(ch)
             }
         }
@@ -192,7 +200,7 @@ impl<'a> Lexer<'a> {
         // Prevent reading the range operator
             || (self.peek_fn(&Self::is_dot) && !self.multipeek_fn(2, &Self::is_dot))
         {
-            if let Some((_, ch)) = self.read() {
+            if let Some(ch) = self.read() {
                 if ch == '.' {
                     if !dot {
                         dot = true;
@@ -213,7 +221,7 @@ impl<'a> Lexer<'a> {
         let mut string = String::new();
         // We use the initial character to support strings that use single or double quotes
         while self.peek_not(initial) {
-            if let Some((_, ch)) = self.read() {
+            if let Some(ch) = self.read() {
                 string.push(ch);
             } else {
                 // TODO: Add proper error handling
