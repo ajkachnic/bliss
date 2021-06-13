@@ -29,7 +29,7 @@ The source code is kind of all over the place so expect a refactor *coming soon 
 - [ ] There is no garbage collection so the stack will overflow if you do too much recursion
 - [ ] The parser can only output one error at a time
 
-I plan to fix these eventually, so don't worry to much
+I plan to fix these eventually, so don't worry too much
 
 ## Directory Structure
 
