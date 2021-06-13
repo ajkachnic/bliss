@@ -1,12 +1,12 @@
+use crate::ast::{BlockStatement, Expr, Ident, Pattern, Program, Stmt};
+use crate::context::{Context, Hint};
 use crate::lexer::Lexer;
+use crate::location::Position;
 use crate::token::{Token, TokenType};
-use crate::{ast, token::Position};
-use ast::{BlockStatement, Expr, Ident, Pattern, Program, Stmt};
-use error::{
-    generate_parser_message, generate_pretty_error, ParserError, ParserResult, ParserType,
-};
 
-mod error;
+use error::{ParseError, ParseErrorKind, ParseResult};
+
+pub mod error;
 
 #[cfg(test)]
 #[path = "./parser_test.rs"]
@@ -82,17 +82,21 @@ impl<'a> Parser<'a> {
         self.peek_token = self.l.next_token();
     }
 
-    pub fn parse_program(&mut self) -> ParserResult<Program> {
+    fn position(&self) -> Position {
+        self.current_token.position.clone()
+    }
+
+    pub fn parse_program(&mut self) -> ParseResult<Program> {
         let mut stmts = Program::new();
-        while self.current_token.tok != TokenType::EOF {
-            let stmt = self.parse_stmt()?;
+        while self.current_token.tok != TokenType::Eof {
+            let stmt = self.parse_stmt().context("Parsing program")?;
             stmts.0.push(stmt);
             self.next_token();
         }
         Ok(stmts)
     }
 
-    fn parse_pattern(&mut self) -> ParserResult<Pattern> {
+    fn parse_pattern(&mut self) -> ParseResult<Pattern> {
         let pattern = match self.current_token.clone().tok {
             TokenType::Ident(id) => {
                 if id.as_str() == "_" {
@@ -114,18 +118,30 @@ impl<'a> Parser<'a> {
                     Pattern::Array(items)
                 } else {
                     self.next_token();
-                    let value = self.parse_pattern()?;
+                    let value = self
+                        .parse_pattern()
+                        .context("Parsing array pattern")
+                        .context("Parsing pattern")?;
                     items.push(value);
 
                     while self.peek_token_is(&TokenType::Comma) {
                         self.next_token();
                         self.next_token();
-                        let value = self.parse_pattern()?;
+                        let value = self
+                            .parse_pattern()
+                            .context("Parsing array pattern")
+                            .context("Parsing pattern")?;
                         items.push(value);
                     }
 
                     // Read past the RightBracket
-                    self.expect_peek(&TokenType::RightBracket, ParserType::Pattern)?;
+                    self.expect_peek(&TokenType::RightBracket)
+                        .context("Parsing closing bracket")
+                        .context("Parsing array pattern")
+                        .context("Parsing pattern")
+                        .hint(
+                            "Double check to make sure you're closing all your closing brackets",
+                        )?;
 
                     Pattern::Array(items)
                 }
@@ -138,29 +154,47 @@ impl<'a> Parser<'a> {
                     Pattern::Hash(items)
                 } else {
                     self.next_token();
-                    let value = self.parse_identifier()?;
+                    let value = self
+                        .parse_identifier()
+                        .context("Parsing hash identifier")
+                        .context("Parsing hash pattern")
+                        .context("Parsing pattern")?;
                     items.push((value, None));
 
                     while self.peek_token_is(&TokenType::Comma) {
                         self.next_token();
                         self.next_token();
-                        let value = self.parse_identifier()?;
+                        let value = self
+                            .parse_identifier()
+                            .context("Parsing hash identifier")
+                            .context("Parsing hash pattern")
+                            .context("Parsing pattern")?;
                         items.push((value, None));
                     }
 
                     // Read past the RightBracket
-                    self.expect_peek(&TokenType::RightBrace, ParserType::Pattern)?;
+                    self.expect_peek(&TokenType::RightBrace)
+                        .context("Parsing closing brace")
+                        .context("Parsing hash pattern")
+                        .context("Parsing pattern")
+                        .hint("Double check to make sure you're closing all your closing braces")?;
 
                     Pattern::Hash(items)
                 }
             }
-            _ => return Err(String::new()),
+            tok => {
+                return Err(ParseError::new(
+                    ParseErrorKind::UnsupportedToken(tok),
+                    self.position(),
+                    self.source.clone(),
+                ))
+            }
         };
 
         Ok(pattern)
     }
 
-    fn parse_stmt(&mut self) -> ParserResult<Stmt> {
+    fn parse_stmt(&mut self) -> ParseResult<Stmt> {
         match self.current_token.clone().tok {
             TokenType::Let => self.parse_assign_stmt(),
             TokenType::Return => self.parse_return_stmt(),
@@ -169,31 +203,43 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_assign_stmt(&mut self) -> ParserResult<Stmt> {
+    fn parse_assign_stmt(&mut self) -> ParseResult<Stmt> {
         self.next_token();
-        let name = self.parse_pattern()?;
+        let name = self
+            .parse_pattern()
+            .context("Parsing assignment name")
+            .context("Parsing assignment")?;
         // Should be an equals sign
-        self.expect_peek(&TokenType::Assign, ParserType::Assign)?;
+        self.expect_peek(&TokenType::Assign)
+            .context("Parsing assignment")?;
 
         self.next_token();
-        let value = self.parse_expression(Precedence::Lowest)?;
+        let value = self
+            .parse_expression(Precedence::Lowest)
+            .context("Parsing assignment value")?;
         if self.peek_token_is(&TokenType::Semicolon) {
             self.next_token();
         }
         Ok(Stmt::Assign(name, value))
     }
-    fn parse_return_stmt(&mut self) -> ParserResult<Stmt> {
+    fn parse_return_stmt(&mut self) -> ParseResult<Stmt> {
         self.next_token();
-        let value = self.parse_expression(Precedence::Lowest)?;
+        let value = self
+            .parse_expression(Precedence::Lowest)
+            .context("Parsing assignment value")?;
         if self.peek_token_is(&TokenType::Semicolon) {
             self.next_token();
         }
         Ok(Stmt::Return(value))
     }
-    fn parse_import_stmt(&mut self) -> ParserResult<Stmt> {
+    fn parse_import_stmt(&mut self) -> ParseResult<Stmt> {
         self.next_token();
-        let name = self.parse_pattern()?;
-        self.expect_peek(&TokenType::From, ParserType::Import)?;
+        let name = self
+            .parse_pattern()
+            .context("Parsing import path/name")
+            .context("Parsing import")?;
+        self.expect_peek(&TokenType::From)
+            .context("Parsing import statement")?;
         self.next_token();
         let source = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token_is(&TokenType::Semicolon) {
@@ -201,7 +247,7 @@ impl<'a> Parser<'a> {
         }
         Ok(Stmt::Import { source, name })
     }
-    fn parse_expression_stmt(&mut self) -> ParserResult<Stmt> {
+    fn parse_expression_stmt(&mut self) -> ParseResult<Stmt> {
         let expression = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token_is(&TokenType::Semicolon) {
             self.next_token()
@@ -209,7 +255,7 @@ impl<'a> Parser<'a> {
         Ok(Stmt::Expr(expression))
     }
 
-    fn parse_expression(&mut self, precedence: Precedence) -> ParserResult<Expr> {
+    fn parse_expression(&mut self, precedence: Precedence) -> ParseResult<Expr> {
         let token = self.current_token.clone();
         let mut left = match token.tok {
             TokenType::Ident(_) => self.parse_identifier().map(Expr::Ident),
@@ -245,15 +291,15 @@ impl<'a> Parser<'a> {
                 | TokenType::Less
                 | TokenType::LessEq => {
                     self.next_token();
-                    self.parse_infix_expression(left.clone()?)
+                    self.parse_infix_expression(left?)
                 }
                 TokenType::LeftParen => {
                     self.next_token();
-                    self.parse_call_expression(left.clone()?)
+                    self.parse_call_expression(left?)
                 }
                 TokenType::Match => {
                     self.next_token();
-                    self.parse_match(left.clone()?)
+                    self.parse_match(left?)
                 }
                 _ => return left,
             };
@@ -261,47 +307,47 @@ impl<'a> Parser<'a> {
         left
     }
 
-    fn parse_identifier(&mut self) -> ParserResult<Ident> {
+    fn parse_identifier(&mut self) -> ParseResult<Ident> {
         if let TokenType::Ident(ident) = self.current_token.clone().tok {
             return Ok(Ident(ident));
         }
-        // This should never happen
-        Err(String::new())
+        unreachable!()
     }
-    fn parse_number(&mut self) -> ParserResult<Expr> {
+    fn parse_number(&mut self) -> ParseResult<Expr> {
         if let TokenType::Number(num) = self.current_token.clone().tok {
             return Ok(Expr::Number(num));
         }
-        // This should never happen
-        Err("Expected number token".to_string())
+        unreachable!()
     }
     fn parse_boolean(&mut self) -> Expr {
         let value = self.current_token_is(&TokenType::True);
         Expr::Boolean(value)
     }
-    fn parse_string(&mut self) -> ParserResult<Expr> {
+    fn parse_string(&mut self) -> ParseResult<Expr> {
         if let TokenType::String(value) = self.current_token.clone().tok {
             return Ok(Expr::String(value));
         }
-        Err("Expected \" or ' token".to_string())
+        unreachable!()
     }
-    fn parse_symbol(&mut self) -> ParserResult<Expr> {
+    fn parse_symbol(&mut self) -> ParseResult<Expr> {
         if let TokenType::Symbol(value) = self.current_token.clone().tok {
             return Ok(Expr::Symbol(value));
         }
-        Err("Expected : token".to_string())
+        unreachable!()
     }
-    fn parse_prefix_expression(&mut self) -> ParserResult<Expr> {
+    fn parse_prefix_expression(&mut self) -> ParseResult<Expr> {
         let operator = match self.current_token.tok {
             TokenType::Bang => "!",
             TokenType::Minus => "-",
             _ => "",
         };
         self.next_token();
-        let right = self.parse_expression(Precedence::Prefix)?;
+        let right = self
+            .parse_expression(Precedence::Prefix)
+            .context("Parsing prefix expression")?;
         Ok(Expr::Prefix(operator.to_string(), Box::new(right)))
     }
-    fn parse_infix_expression(&mut self, left: Expr) -> ParserResult<Expr> {
+    fn parse_infix_expression(&mut self, left: Expr) -> ParseResult<Expr> {
         let operator = match self.current_token.tok {
             TokenType::Plus => "+",
             TokenType::Minus => "-",
@@ -322,7 +368,6 @@ impl<'a> Parser<'a> {
 
         let precedence = self.current_precedence();
         self.next_token();
-        // I sure hope this doesn't panic
         let right = self.parse_expression(precedence)?;
 
         Ok(Expr::Infix(
@@ -331,21 +376,25 @@ impl<'a> Parser<'a> {
             Box::new(right),
         ))
     }
-    fn parse_grouped_expressions(&mut self) -> ParserResult<Expr> {
+    fn parse_grouped_expressions(&mut self) -> ParseResult<Expr> {
         self.next_token();
-        let exp = self.parse_expression(Precedence::Lowest)?;
-        self.expect_peek(&TokenType::RightParen, ParserType::Grouped)?;
+        let exp = self
+            .parse_expression(Precedence::Lowest)
+            .context("Parsing grouped expression")?;
+        self.expect_peek(&TokenType::RightParen)
+            .context("Parsing closing paren")
+            .context("Parsing grouped expression")?;
         Ok(exp)
     }
-    fn parse_if_expression(&mut self) -> ParserResult<Expr> {
+    fn parse_if_expression(&mut self) -> ParseResult<Expr> {
         self.next_token();
         let condition = self.parse_expression(Precedence::Lowest)?;
         // TODO: Support shortened versions like this:
         //  if true then 5 else 10
-        self.expect_peek(&TokenType::LeftBrace, ParserType::If)?;
+        self.expect_peek(&TokenType::LeftBrace)?;
         let consequence = self.parse_block_stmt()?;
-        self.expect_peek(&TokenType::Else, ParserType::If)?;
-        self.expect_peek(&TokenType::LeftBrace, ParserType::If)?;
+        self.expect_peek(&TokenType::Else)?;
+        self.expect_peek(&TokenType::LeftBrace)?;
         let alternative = self.parse_block_stmt()?;
 
         Ok(Expr::If {
@@ -354,7 +403,7 @@ impl<'a> Parser<'a> {
             alternative,
         })
     }
-    fn parse_function(&mut self) -> ParserResult<Expr> {
+    fn parse_function(&mut self) -> ParseResult<Expr> {
         let token = self.peek_token.clone();
         let parameters = match token.tok {
             TokenType::LeftParen => {
@@ -365,17 +414,29 @@ impl<'a> Parser<'a> {
                 self.next_token();
                 vec![Ident(ident)]
             }
-            _ => return Err(format!("Expected ( or identifier, found token {:?}", token)),
+            tok => {
+                return Err(ParseError::new(
+                    ParseErrorKind::ExpectedMultiple {
+                        expected: vec![TokenType::LeftParen, TokenType::Ident(String::new())],
+                        found: tok,
+                    },
+                    self.position(),
+                    self.source.clone(),
+                )
+                .context("Parsing function"))
+            }
         };
 
-        self.expect_peek(&TokenType::Arrow, ParserType::Function)?;
+        self.expect_peek(&TokenType::Arrow)
+            .context("Expecting arrow")
+            .context("Parsing function")?;
         self.next_token();
 
         let body = self.parse_block_shorthand()?;
 
         Ok(Expr::Function { parameters, body })
     }
-    fn parse_function_parameters(&mut self) -> ParserResult<Vec<Ident>> {
+    fn parse_function_parameters(&mut self) -> ParseResult<Vec<Ident>> {
         let mut identifiers = vec![];
 
         if self.peek_token_is(&TokenType::RightParen) {
@@ -401,18 +462,22 @@ impl<'a> Parser<'a> {
             identifiers.push(ident);
         }
 
-        self.expect_peek(&TokenType::RightParen, ParserType::Call)?;
+        self.expect_peek(&TokenType::RightParen)
+            .context("Parsing closing paren")
+            .context("Parsing function parameters")?;
 
         Ok(identifiers)
     }
-    fn parse_call_expression(&mut self, function: Expr) -> ParserResult<Expr> {
-        let args = self.parse_call_expression_args()?;
+    fn parse_call_expression(&mut self, function: Expr) -> ParseResult<Expr> {
+        let args = self
+            .parse_call_expression_args()
+            .context("Parsing call expression")?;
         Ok(Expr::Call {
             function: Box::new(function),
             arguments: args,
         })
     }
-    fn parse_call_expression_args(&mut self) -> ParserResult<Vec<Expr>> {
+    fn parse_call_expression_args(&mut self) -> ParseResult<Vec<Expr>> {
         let mut args = vec![];
 
         if self.peek_token_is(&TokenType::RightParen) {
@@ -430,17 +495,19 @@ impl<'a> Parser<'a> {
             args.push(self.parse_expression(Precedence::Lowest)?);
         }
 
-        self.expect_peek(&TokenType::RightParen, ParserType::Call)?;
+        self.expect_peek(&TokenType::RightParen)
+            .context("Parsing closing paren")
+            .context("Parsing call expression arguments")?;
 
         Ok(args)
     }
 
-    fn parse_block_stmt(&mut self) -> ParserResult<BlockStatement> {
+    fn parse_block_stmt(&mut self) -> ParseResult<BlockStatement> {
         let mut stmts = vec![];
         self.next_token();
         // self.next_token();
         while !self.current_token_is(&TokenType::RightBrace)
-            && !self.current_token_is(&TokenType::EOF)
+            && !self.current_token_is(&TokenType::Eof)
         {
             let stmt = self.parse_stmt()?;
             stmts.push(stmt);
@@ -450,7 +517,7 @@ impl<'a> Parser<'a> {
         Ok(BlockStatement(stmts))
     }
 
-    fn parse_block_shorthand(&mut self) -> ParserResult<BlockStatement> {
+    fn parse_block_shorthand(&mut self) -> ParseResult<BlockStatement> {
         if self.current_token_is(&TokenType::LeftBrace) {
             return self.parse_block_stmt();
         }
@@ -458,16 +525,19 @@ impl<'a> Parser<'a> {
         Ok(Stmt::Expr(expr).into())
     }
 
-    fn parse_match(&mut self, condition: Expr) -> ParserResult<Expr> {
-        self.expect_peek(&TokenType::LeftBrace, ParserType::Match)?;
+    fn parse_match(&mut self, condition: Expr) -> ParseResult<Expr> {
+        self.expect_peek(&TokenType::LeftBrace)?;
         let cases = self.parse_match_cases()?;
-        self.expect_peek(&TokenType::RightBrace, ParserType::Match)?;
+        self.expect_peek(&TokenType::RightBrace)
+            .context("Parsing closing bracket")
+            .context("Parsing match expression")
+            .hint("Ensure you didn't forget a curly brace to close your match expression")?;
         Ok(Expr::Match {
             condition: Box::new(condition),
             cases,
         })
     }
-    fn parse_match_cases(&mut self) -> ParserResult<Vec<(Pattern, BlockStatement)>> {
+    fn parse_match_cases(&mut self) -> ParseResult<Vec<(Pattern, BlockStatement)>> {
         let mut cases = vec![];
 
         if self.peek_token_is(&TokenType::RightBrace) {
@@ -475,7 +545,16 @@ impl<'a> Parser<'a> {
         }
         self.next_token();
         let key = self.parse_pattern()?;
-        self.expect_peek(&TokenType::Arrow, ParserType::Match)?;
+        self.expect_peek(&TokenType::Arrow)
+            .context("Parsing match case")
+            .hint(
+                "Make sure you follow valid match syntax, here's an example:
+true :: {
+    true -> 'yes',
+    false -> 'no'    
+}
+",
+            )?;
         self.next_token();
         let value = self.parse_block_shorthand()?;
 
@@ -484,8 +563,17 @@ impl<'a> Parser<'a> {
         while self.peek_token_is(&TokenType::Comma) {
             self.next_token();
             self.next_token();
-            let key = self.parse_pattern()?;
-            self.expect_peek(&TokenType::Arrow, ParserType::Match)?;
+            let key = self.parse_pattern().context("Parsing match expression")?;
+            self.expect_peek(&TokenType::Arrow)
+                .context("Parsing match case")
+                .hint(
+                    "Make sure you follow valid match syntax, here's an example:
+true :: {
+    true -> 'yes',
+    false -> 'no'    
+}
+",
+                )?;
             self.next_token();
             let value = self.parse_block_shorthand()?;
 
@@ -494,7 +582,7 @@ impl<'a> Parser<'a> {
         Ok(cases)
     }
 
-    fn parse_array(&mut self) -> ParserResult<Expr> {
+    fn parse_array(&mut self) -> ParseResult<Expr> {
         let mut items = vec![];
         if self.peek_token_is(&TokenType::RightBracket) {
             self.next_token();
@@ -513,11 +601,14 @@ impl<'a> Parser<'a> {
         }
 
         // Read past the RightBracket
-        self.expect_peek(&TokenType::RightBracket, ParserType::Array)?;
+        self
+            .expect_peek(&TokenType::RightBracket)
+            .context("Looking for closing array token")
+            .hint("Double check to make sure you've closed all your arrays, and you should be on your way")?;
 
         Ok(Expr::Array(items))
     }
-    fn parse_hash(&mut self) -> ParserResult<Expr> {
+    fn parse_hash(&mut self) -> ParseResult<Expr> {
         let mut items = vec![];
         if self.peek_token_is(&TokenType::RightBrace) {
             self.next_token();
@@ -536,7 +627,9 @@ impl<'a> Parser<'a> {
                 {
                     items.push((ident, key))
                 } else {
-                    self.expect_peek(&TokenType::Assign, ParserType::Hash)?;
+                    self.expect_peek(&TokenType::Assign)
+                        .context("Parsing hash value")
+                        .context("Parsing hash")?;
                     self.next_token();
                     let value = self.parse_expression(Precedence::Lowest)?;
                     items.push((ident, value));
@@ -554,7 +647,9 @@ impl<'a> Parser<'a> {
                     if self.peek_token_is(&TokenType::Comma) {
                         items.push((ident, key))
                     } else {
-                        self.expect_peek(&TokenType::Assign, ParserType::Hash)?;
+                        self.expect_peek(&TokenType::Assign)
+                            .context("Parsing hash value")
+                            .context("Parsing hash")?;
                         self.next_token();
                         let value = self.parse_expression(Precedence::Lowest)?;
                         items.push((ident, value));
@@ -565,7 +660,9 @@ impl<'a> Parser<'a> {
         }
 
         // Read past the RightBracket
-        self.expect_peek(&TokenType::RightBrace, ParserType::Hash)?;
+        self.expect_peek(&TokenType::RightBrace)
+            .context("Parsing closing bracket")
+            .context("Parsing hash")?;
 
         Ok(Expr::Hash(items))
     }
@@ -577,12 +674,12 @@ impl<'a> Parser<'a> {
     fn peek_token_is(&mut self, t: &TokenType) -> bool {
         &self.peek_token.tok == t
     }
-    fn expect_peek(&mut self, t: &TokenType, context: ParserType) -> Result<(), String> {
+    fn expect_peek(&mut self, t: &TokenType) -> ParseResult<()> {
         if self.peek_token_is(t) {
             self.next_token();
             return Ok(());
         }
-        Err(self.peek_error(&t, context))
+        Err(self.peek_error(&t))
     }
     fn peek_precedence(&mut self) -> Precedence {
         get_precedence(&self.peek_token.tok)
@@ -591,45 +688,27 @@ impl<'a> Parser<'a> {
         get_precedence(&self.current_token.tok)
     }
     // Errors stuff
-    fn peek_error(&mut self, t: &TokenType, context: ParserType) -> String {
+    fn peek_error(&mut self, t: &TokenType) -> ParseError {
+        println!("{:?}", self.peek_token);
         let t = Token {
             tok: t.clone(),
-            offset: self.peek_token.offset,
+            position: match self.peek_token.tok {
+                TokenType::Eof => self.current_token.position.clone(),
+                _ => self.peek_token.position.clone(),
+            },
         };
-        let position = Position::from(t.offset, &self.source);
 
-        let attempted_msg = generate_parser_message(
-            ParserError::ExpectedFound(&t.tok, &self.peek_token.tok, position.clone()),
-            context.clone(),
-            position.clone(),
-            &self.source,
-        );
-        let mut msg = format!(
-            "On line {}, and column {}, we expected next token to be {}, got {} instead. This was in the {:?} parser", position.line, position.column,
-            t.tok, self.peek_token.tok, context
-        );
-        if attempted_msg != String::new() {
-            msg = attempted_msg;
-        }
-        msg
+        let kind = ParseErrorKind::ExpectedFound {
+            expected: t.tok,
+            found: self.peek_token.tok.clone(),
+        };
+        ParseError::new(kind, t.position, self.source.clone())
     }
-    fn no_prefix_parser_error(&mut self, t: Token) -> String {
-        let position = Position::from(self.current_token.offset, self.source.as_str());
-        let mut msg = format!(
-            "On {}, no prefix parse function for {} found",
-            position, t.tok
-        );
-        let error = generate_pretty_error(position, &self.source);
-        msg.push('\n');
-        msg.push_str(&error);
-
-        msg
+    fn no_prefix_parser_error(&mut self, t: Token) -> ParseError {
+        ParseError::new(
+            ParseErrorKind::NoPrefixFound(t.tok),
+            self.position(),
+            self.source.clone(),
+        )
     }
-
-    // fn debug(&self) {
-    //     println!(
-    //         "The current token is {:?}, and the peek is {:?}",
-    //         self.current_token, self.peek_token
-    //     );
-    // }
 }

@@ -52,21 +52,10 @@ fn eval(line: &str, /*context: &mut Context,*/ eval: &mut Evaluator) {
         } else if let Err(error) = evaled {
             println!("An error occurred while evaluating your code:\n{}", error);
         }
-        // }
-        //     Err(errors) => {
-        //         println!(
-        //             "{}\nSorry to disturb you, but we had some trouble while analyzing your code for validity",
-        //              style::bold("Semantic Analysis Errors:")
-        //         );
-        //         for error in errors {
-        //             println!("{}\n", error);
-        //         }
-        //     }
-        // }
     } else if let Err(error) = program {
         println!(
-            "{}\nWe had a few problems while parsing your code",
-            style::bold("Parsing Errors:")
+            "{}\nWe had a problem while parsing your code",
+            style::bold("Parse Error:")
         );
         println!("{}", error);
     }

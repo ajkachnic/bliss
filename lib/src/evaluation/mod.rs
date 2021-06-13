@@ -132,7 +132,6 @@ impl<'a> Evaluator<'a> {
                 env: Environment::new_enclosed(&self.env).into(),
             }),
             Expr::Symbol(sym) => Ok(Object::Symbol(sym)),
-            _ => Err(format!("Unable to evaluate node: {}", node)),
         }
     }
 

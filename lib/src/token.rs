@@ -1,46 +1,11 @@
 use std::fmt;
 
-#[derive(Debug, Clone)]
-pub struct Position {
-    pub line: usize,
-    pub column: usize,
-}
-
-impl Position {
-    pub fn from(offset: usize, source: &str) -> Position {
-        let mut total = 0;
-        let mut line = 1;
-        let mut column = 0;
-
-        for ch in source.chars() {
-            if ch == '\n' {
-                line += 1;
-                column = 0;
-            } else {
-                column += 1;
-            }
-
-            total += 1;
-
-            if offset < total {
-                break;
-            }
-        }
-
-        Position { line, column }
-    }
-}
-
-impl fmt::Display for Position {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "line {}, column {}", self.line, self.column)
-    }
-}
+use crate::location::Position;
 
 #[derive(Debug, PartialEq, Clone)]
 pub struct Token {
     pub tok: TokenType,
-    pub offset: usize,
+    pub position: Position,
 }
 
 impl Default for Token {
@@ -52,8 +17,8 @@ impl Default for Token {
 impl Token {
     pub fn new() -> Token {
         Token {
-            tok: TokenType::EOF,
-            offset: 0,
+            tok: TokenType::Eof,
+            position: 0..0,
         }
     }
 }
@@ -61,7 +26,7 @@ impl Token {
 #[derive(Debug, PartialEq, Clone)]
 pub enum TokenType {
     Illegal,
-    EOF,
+    Eof,
 
     Ident(String),  // foobar
     Number(f64),    // Integer or float
@@ -180,7 +145,7 @@ impl fmt::Display for TokenType {
             TokenType::Else => write!(f, "else"),
             TokenType::Then => write!(f, "then"),
 
-            TokenType::EOF => write!(f, "EOF"),
+            TokenType::Eof => write!(f, "EOF"),
             _ => write!(f, ""),
         }
     }

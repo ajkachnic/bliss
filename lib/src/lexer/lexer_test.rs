@@ -123,7 +123,7 @@ fn test_single() {
         TokenType::Comma,
         TokenType::Semicolon,
         TokenType::Colon,
-        TokenType::EOF,
+        TokenType::Eof,
     ];
     test_tokens(input, tests);
 }

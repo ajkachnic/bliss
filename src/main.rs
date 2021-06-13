@@ -5,7 +5,7 @@ mod repl;
 use std::env;
 use std::path::Path;
 
-fn main() {
+fn main() -> std::io::Result<()> {
     let args: Vec<String> = env::args().collect();
 
     if args.len() > 1 {
@@ -16,8 +16,10 @@ fn main() {
             panic!("The file {} doesn't exist.", exists)
         }
 
-        file::exec_file(path).unwrap();
+        file::exec_file(path)?;
     } else {
         repl::start();
     }
+
+    Ok(())
 }
