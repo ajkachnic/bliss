@@ -49,9 +49,10 @@ pub enum Expr {
     Ident(Ident),
     Prefix(String, Box<Expr>),
     Infix(Box<Expr>, String, Box<Expr>),
-    Index {
-        index: Box<Expr>,
-        of: Box<Expr>,
+    Member {
+        property: Box<Expr>,
+        object: Box<Expr>,
+        computed: bool,
     },
     Boolean(bool),
     String(String),
@@ -127,7 +128,17 @@ impl fmt::Display for Expr {
             Expr::Number(num) => write!(f, "{}", num),
             Expr::Prefix(op, expr) => write!(f, "({}{})", op, expr),
             Expr::Infix(left, operator, right) => write!(f, "({} {} {})", left, operator, right),
-            Expr::Index { index, of } => write!(f, "{}[{}]", of, index),
+            Expr::Member {
+                property: index,
+                object: of,
+                computed,
+            } => {
+                if *computed {
+                    write!(f, "{}[{}]", of, index)
+                } else {
+                    write!(f, "{}.({})", of, index)
+                }
+            }
             Expr::Boolean(value) => write!(f, "{}", value),
             Expr::String(value) => write!(f, "'{}'", value),
             Expr::Symbol(value) => write!(f, ":{}", value),

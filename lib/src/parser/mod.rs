@@ -53,6 +53,7 @@ fn get_precedence(tok: &TokenType) -> Precedence {
 
         TokenType::LeftParen => Precedence::Call,
         TokenType::LeftBracket => Precedence::Index,
+        TokenType::Period => Precedence::Index,
 
         _ => Precedence::Lowest,
     }
@@ -308,6 +309,11 @@ impl<'a> Parser<'a> {
                     self.next_token();
                     self.parse_match(left?)
                 }
+                TokenType::Period => {
+                    self.next_token();
+                    self.next_token();
+                    self.parse_dot_expression(left?)
+                }
                 _ => return left,
             };
         }
@@ -318,7 +324,14 @@ impl<'a> Parser<'a> {
         if let TokenType::Ident(ident) = self.current_token.clone().tok {
             return Ok(Ident(ident));
         }
-        unreachable!()
+        Err(ParseError::new(
+            ParseErrorKind::ExpectedFound {
+                expected: TokenType::Ident(String::new()),
+                found: self.current_token.tok.clone(),
+            },
+            self.current_token.position.clone(),
+            self.source.clone(),
+        ))
     }
     fn parse_number(&mut self) -> ParseResult<Expr> {
         if let TokenType::Number(num) = self.current_token.clone().tok {
@@ -490,11 +503,23 @@ impl<'a> Parser<'a> {
             ));
         };
 
-        Ok(Expr::Index {
-            index: Box::new(index),
-            of: Box::new(left),
+        Ok(Expr::Member {
+            property: Box::new(index),
+            object: Box::new(left),
+            computed: true,
         })
     }
+
+    fn parse_dot_expression(&mut self, left: Expr) -> ParseResult<Expr> {
+        let property = self.parse_identifier()?;
+
+        Ok(Expr::Member {
+            property: Box::new(property.into()),
+            object: Box::new(left),
+            computed: false,
+        })
+    }
+
     fn parse_call_expression(&mut self, function: Expr) -> ParseResult<Expr> {
         let args = self
             .parse_call_expression_args()
