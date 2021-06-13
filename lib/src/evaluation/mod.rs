@@ -126,6 +126,7 @@ impl<'a> Evaluator<'a> {
                 function,
                 arguments,
             } => self.eval_call_expression(*function, arguments),
+            Expr::Index { index, of } => self.eval_index_expression(*index, *of),
             Expr::Function { parameters, body } => Ok(Object::Function {
                 parameters,
                 body,
@@ -223,6 +224,24 @@ impl<'a> Evaluator<'a> {
 
         self.env = env;
         Ok(res)
+    }
+
+    fn eval_index_expression(&mut self, index: Expr, of: Expr) -> EvalResult<'a> {
+        let index = self.eval_expr(index)?;
+        let of = self.eval_expr(of)?;
+
+        self.eval_index_components(index, of)
+    }
+    fn eval_index_components(&mut self, index: Object<'a>, of: Object<'a>) -> EvalResult<'a> {
+        Ok(match (index, of) {
+            (Object::Number(n), Object::Array(arr)) => arr.get(n as usize).unwrap().clone(),
+            (Object::Ident(id), Object::Hash(hash)) => hash.get(&id.to_string()).unwrap().clone(),
+            (Object::Ident(id), of) => {
+                let index = self.env.borrow().get(id.to_string()).unwrap();
+                return self.eval_index_components(index, of);
+            }
+            (index, of) => return Err(format!("Incompatible types, {} and {}", index, of)),
+        })
     }
 
     fn eval_match_expression(

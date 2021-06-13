@@ -218,6 +218,25 @@ fn test_call_expression() {
 }
 
 #[test]
+fn test_index_expression() {
+    let input = "1..5[2] == 3";
+    let expected = Expr::Infix(
+        Box::new(Expr::Index {
+            index: Box::new(Expr::Number(2.0)),
+            of: Box::new(Expr::Infix(
+                Box::new(Expr::Number(1.0)),
+                String::from(".."),
+                Box::new(Expr::Number(5.0)),
+            )),
+        }),
+        "==".to_string(),
+        Box::new(Expr::Number(3.0)),
+    )
+    .into();
+    test_output(input, expected)
+}
+
+#[test]
 fn test_pattern() {
     let input = "[ 4.5, foo, true, :bar, 'hello', { abc, def }, _ ]";
     let expected = Pattern::Array(vec![

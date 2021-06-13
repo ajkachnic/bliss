@@ -18,6 +18,7 @@ enum Precedence {
     Logical,
     Equals,
     LessGreater,
+    Index,
     Range,
     Sum,
     Product,
@@ -51,6 +52,7 @@ fn get_precedence(tok: &TokenType) -> Precedence {
         TokenType::Match => Precedence::Match,
 
         TokenType::LeftParen => Precedence::Call,
+        TokenType::LeftBracket => Precedence::Index,
 
         _ => Precedence::Lowest,
     }
@@ -297,6 +299,11 @@ impl<'a> Parser<'a> {
                     self.next_token();
                     self.parse_call_expression(left?)
                 }
+                TokenType::LeftBracket => {
+                    self.next_token();
+                    self.next_token();
+                    self.parse_index_expression(left?)
+                }
                 TokenType::Match => {
                     self.next_token();
                     self.parse_match(left?)
@@ -467,6 +474,26 @@ impl<'a> Parser<'a> {
             .context("Parsing function parameters")?;
 
         Ok(identifiers)
+    }
+    fn parse_index_expression(&mut self, left: Expr) -> ParseResult<Expr> {
+        let index = self.parse_expression(Precedence::Lowest)?;
+
+        self.next_token();
+        if !self.current_token_is(&TokenType::RightBracket) {
+            return Err(ParseError::new(
+                ParseErrorKind::ExpectedFound {
+                    expected: TokenType::RightBracket,
+                    found: self.current_token.tok.clone(),
+                },
+                self.current_token.position.clone(),
+                self.source.clone(),
+            ));
+        };
+
+        Ok(Expr::Index {
+            index: Box::new(index),
+            of: Box::new(left),
+        })
     }
     fn parse_call_expression(&mut self, function: Expr) -> ParseResult<Expr> {
         let args = self
@@ -689,7 +716,6 @@ true :: {
     }
     // Errors stuff
     fn peek_error(&mut self, t: &TokenType) -> ParseError {
-        println!("{:?}", self.peek_token);
         let t = Token {
             tok: t.clone(),
             position: match self.peek_token.tok {
